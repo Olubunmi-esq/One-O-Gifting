@@ -58,7 +58,7 @@ For a coherent catalogue, photograph the actual finished item and its packaging 
 
 ## Order and payment behaviour
 
-Checkout currently creates an **order request**, not a paid order. The database derives product prices from the catalogue, checks inventory and creates the order and its lines atomically. Delivery is not guessed. ONE O confirms delivery cost, production timing and availability before sending official payment instructions.
+Checkout currently creates an **order request**, not a paid order. The database derives product prices from the catalogue and creates the order and its lines atomically. Inventory is checked as an advisory availability check, but stock is not reserved or deducted for an unpaid request. ONE O must confirm availability before accepting the order. Delivery is not guessed. ONE O confirms delivery cost, production timing and availability before sending official payment instructions.
 
 No payment gateway is represented as connected. Before launch, select and configure a verified Nigerian-market payment provider, implement server-side payment initialisation and webhook verification, and only mark an order paid after a verified provider event. Do not accept screenshots or browser-submitted claims as proof of payment.
 
