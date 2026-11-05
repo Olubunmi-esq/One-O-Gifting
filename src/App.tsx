@@ -45,196 +45,207 @@ function Newsletter(){const [done,setDone]=useState(false);return <form classNam
 function Checkout({cart,subtotal,updateQty,updateNote,onBack,onComplete}:{cart:CartLine[];subtotal:number;updateQty:(id:string,d:number)=>void;updateNote:(id:string,n:string)=>void;onBack:()=>void;onComplete:(id:string)=>void}){const [busy,setBusy]=useState(false),[error,setError]=useState('');return <main className="page-wrap checkout-page"><button className="back-link" onClick={onBack}>← Continue shopping</button><p className="eyebrow">THE FINAL DETAILS</p><h1>Let's get this <em>to them.</em></h1><div className="checkout-layout"><form className="form-card checkout-form" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');const f=new FormData(e.currentTarget);const payload={customer:{name:f.get('name'),email:f.get('email'),phone:f.get('phone')},delivery:{recipient_name:f.get('recipient'),recipient_phone:f.get('recipient_phone'),address_line1:f.get('address'),city:f.get('city'),state:f.get('state'),postal_code:f.get('postal'),delivery_note:f.get('delivery_note')},items:cart.map(x=>({product_id:x.product.id,quantity:x.quantity,personalisation_note:x.note})),gift_message:f.get('gift_message')};try{if(!supabase)throw new Error('The ordering system is not connected yet. Please contact ONE O to place this order.');const {data,error}=await supabase.functions.invoke('create-order',{body:payload});if(error)throw error;onComplete(data.order_number||data.id)}catch(err:any){setError(err.message||'We could not submit your order. Please try again.')}finally{setBusy(false)}}}><h2>Your details</h2><div className="field-row"><label>Full name<input name="name" required autoComplete="name"/></label><label>Email address<input type="email" name="email" required autoComplete="email"/></label></div><label>Phone number<input name="phone" required autoComplete="tel" placeholder="+234"/></label><div className="form-divider"/><h2>Delivery details</h2><label>Recipient's name<input name="recipient" required/></label><label>Recipient's phone number<input name="recipient_phone" required placeholder="+234"/></label><label>Delivery address<input name="address" required placeholder="House number, street and area"/></label><div className="field-row"><label>City / town<input name="city" required/></label><label>State<input name="state" required placeholder="e.g. Oyo"/></label></div><label>Postal code (if applicable)<input name="postal"/></label><label>Delivery instructions<textarea name="delivery_note" rows={2}/></label><div className="form-divider"/><h2>A note from you</h2><label>Gift message (optional)<textarea name="gift_message" rows={3} placeholder="Write a message to include with the gift..."/></label><p className="fine-print">Your order is a request until our team confirms availability, delivery fee, production timeline and payment instructions. Please do not send payment until you receive an official confirmation from ONE O.</p>{error&&<p className="error">{error}</p>}<button className="button dark full" disabled={busy||!cart.length}>{busy?'Submitting...':'Submit order request'} <ArrowRight size={16}/></button></form><aside className="order-summary"><h2>Your order</h2>{cart.map(x=><div className="summary-line" key={x.product.id}><div><b>{x.product.name}</b><small>{x.quantity} × {money(x.product.price)}</small>{x.product.personalised&&<textarea placeholder="Personalisation details (name, colour, date...)" value={x.note} onChange={e=>updateNote(x.product.id,e.target.value)}/>}</div><strong>{money(x.product.price*x.quantity)}</strong><div className="qty"><button type="button" onClick={()=>updateQty(x.product.id,-1)}><Minus size={12}/></button>{x.quantity}<button type="button" onClick={()=>updateQty(x.product.id,1)}><Plus size={12}/></button></div></div>)}<div className="summary-total"><span>Subtotal</span><b>{money(subtotal)}</b></div><small>Delivery fee will be confirmed based on the destination.</small></aside></div></main>}
 function Admin({products,setProducts,onExit}:{products:Product[];setProducts:(p:Product[])=>void;onExit:()=>void}) {
   const [session,setSession]=useState<any>(null);
+  const [authorized,setAuthorized]=useState(false);
+  const [checkingRole,setCheckingRole]=useState(true);
   const [tab,setTab]=useState('orders');
   const [orders,setOrders]=useState<any[]>([]);
+  const [enquiries,setEnquiries]=useState<any[]>([]);
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(false);
+  const [refreshing,setRefreshing]=useState(false);
 
   useEffect(()=>{
-    if(!supabase) return;
+    if(!supabase){setCheckingRole(false);return;}
     supabase.auth.getSession().then(({data})=>setSession(data.session));
     const {data}=supabase.auth.onAuthStateChange((_event,nextSession)=>setSession(nextSession));
     return ()=>data.subscription.unsubscribe();
   },[]);
 
   useEffect(()=>{
-    if(!session || !supabase) return;
-    supabase.from('orders').select('*,order_items(*)').order('created_at',{ascending:false})
-      .then(({data,error})=>{ if(!error) setOrders(data||[]); });
+    let alive=true;
+    async function verify(){
+      if(!supabase||!session){setAuthorized(false);setCheckingRole(false);return;}
+      setCheckingRole(true);
+      const {data,error}=await supabase.from('user_roles').select('role').eq('user_id',session.user.id).in('role',['admin','staff']);
+      if(alive){setAuthorized(!error&&Boolean(data?.length));setCheckingRole(false);}
+    }
+    verify();
+    return ()=>{alive=false;};
   },[session]);
+
+  const refresh=async()=>{
+    if(!supabase||!authorized)return;
+    setRefreshing(true);
+    const [ordersResult,enquiriesResult,productsResult]=await Promise.all([
+      supabase.from('orders').select('*,order_items(*)').order('created_at',{ascending:false}),
+      supabase.from('enquiries').select('*').order('created_at',{ascending:false}),
+      supabase.from('products').select('*').order('created_at',{ascending:false}),
+    ]);
+    if(!ordersResult.error)setOrders(ordersResult.data||[]);
+    if(!enquiriesResult.error)setEnquiries(enquiriesResult.data||[]);
+    if(!productsResult.error){
+      const mapped=(productsResult.data||[]).map((p:any)=>({...p,active:p.is_active,personalised:p.is_personalisable,featured:p.is_featured,occasion:p.occasions||[],imageUrls:p.image_urls||[]}));
+      setProducts(mapped.filter((p:Product)=>p.active));
+    }
+    setRefreshing(false);
+  };
+
+  useEffect(()=>{if(authorized)refresh();},[authorized]);
 
   const signIn=async(e:React.FormEvent<HTMLFormElement>)=>{
     e.preventDefault();
-    if(!supabase){setError('Connect Supabase before using the admin area.');return;}
-    setLoading(true);
+    if(!supabase){setError('The administration service is not connected yet.');return;}
+    setLoading(true);setError('');
     const {error:authError}=await supabase.auth.signInWithPassword({email,password});
     setError(authError?.message||'');
     setLoading(false);
   };
 
+  const updateOrderStatus=async(id:string,status:string)=>{
+    if(!supabase)return;
+    const {error}=await supabase.from('orders').update({status,updated_at:new Date().toISOString()}).eq('id',id);
+    if(error){setError('We could not update that order. Please refresh and try again.');return;}
+    setOrders(old=>old.map(order=>order.id===id?{...order,status}:order));
+  };
+
   if(!session) {
     return (
-      <main className="admin-login">
-        <div className="admin-login-card">
-          <span className="admin-symbol">ONE O</span>
-          <p className="eyebrow">PRIVATE ADMINISTRATION</p>
-          <h1>Welcome <em>back.</em></h1>
-          <p>Sign in with an authorised ONE O administrator account.</p>
-          <form onSubmit={signIn}>
-            <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required /></label>
-            <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required /></label>
-            {error && <p className="error">{error}</p>}
-            <button className="button dark full" disabled={loading}>{loading?'Signing in...':'Sign in securely'}</button>
-          </form>
-          <button className="back-link" onClick={onExit}>Return to storefront</button>
-        </div>
-      </main>
+      <main className="admin-login"><div className="admin-login-card">
+        <span className="admin-symbol">ONE O</span><p className="eyebrow">PRIVATE ADMINISTRATION</p>
+        <h1>Welcome <em>back.</em></h1><p>Sign in with an authorised ONE O administrator account.</p>
+        <form onSubmit={signIn}>
+          <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required /></label>
+          <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required /></label>
+          {error&&<p className="error">{error}</p>}
+          <button className="button dark full" disabled={loading}>{loading?'Signing in...':'Sign in securely'}</button>
+        </form><button className="back-link" onClick={onExit}>Return to storefront</button>
+      </div></main>
     );
   }
 
-  return (
-    <main className="admin-page">
-      <aside className="admin-sidebar">
-        <span className="admin-symbol">ONE O</span>
-        <p>ADMINISTRATION</p>
-        <button className={tab==='orders'?'selected':''} onClick={()=>setTab('orders')}><ClipboardList/> Orders</button>
-        <button className={tab==='products'?'selected':''} onClick={()=>setTab('products')}><Boxes/> Products</button>
-        <button onClick={onExit}><LayoutDashboard/> Storefront</button>
-        <button onClick={()=>supabase?.auth.signOut()}><LogOut/> Sign out</button>
-      </aside>
-      <section className="admin-content">
-        <div className="admin-top">
-          <div><p className="eyebrow">ONE O CONTROL ROOM</p><h1>{tab==='orders'?'Orders':'Products'}</h1></div>
-          <span>{session.user.email}</span>
+  if(checkingRole)return <main className="admin-login"><p>Verifying administration access…</p></main>;
+  if(!authorized)return <main className="admin-login"><div className="admin-login-card">
+    <span className="admin-symbol">ONE O</span><p className="eyebrow">ACCESS RESTRICTED</p>
+    <h1>This area is <em>private.</em></h1><p>Your account is signed in, but it has not been assigned an ONE O staff or administrator role.</p>
+    <button className="button dark full" onClick={()=>supabase?.auth.signOut()}>Sign out</button>
+    <button className="back-link" onClick={onExit}>Return to storefront</button>
+  </div></main>;
+
+  return <main className="admin-page">
+    <aside className="admin-sidebar">
+      <span className="admin-symbol">ONE O</span><p>ADMINISTRATION</p>
+      <button className={tab==='orders'?'selected':''} onClick={()=>setTab('orders')}><ClipboardList/> Orders</button>
+      <button className={tab==='products'?'selected':''} onClick={()=>setTab('products')}><Boxes/> Products & photographs</button>
+      <button className={tab==='enquiries'?'selected':''} onClick={()=>setTab('enquiries')}><Mail/> Enquiries</button>
+      <button onClick={onExit}><LayoutDashboard/> Storefront</button>
+      <button onClick={()=>supabase?.auth.signOut()}><LogOut/> Sign out</button>
+    </aside>
+    <section className="admin-content">
+      <div className="admin-top"><div><p className="eyebrow">ONE O CONTROL ROOM</p><h1>{tab==='orders'?'Orders':tab==='products'?'Products & photographs':'Customer enquiries'}</h1></div><div className="admin-tools"><span>{session.user.email}</span><button className="text-link" onClick={refresh} disabled={refreshing}>{refreshing?'Refreshing…':'Refresh data'}</button></div></div>
+      {error&&<p className="error">{error}</p>}
+      {tab==='orders'&&<>
+        <div className="admin-stat"><span>Orders received</span><b>{orders.length}</b></div>
+        <div className="admin-table">
+          <div className="admin-row admin-header"><span>Order / Date</span><span>Customer</span><span>Items</span><span>Status</span><span>Total</span></div>
+          {orders.map(order=><div className="admin-row" key={order.id}>
+            <span>{order.order_number}<small>{new Date(order.created_at).toLocaleString()}</small></span>
+            <span>{order.customer_name}<small>{order.customer_email}<br/>{order.customer_phone}</small></span>
+            <span>{(order.order_items||[]).map((item:any)=>item.product_name+' × '+item.quantity).join(', ')}</span>
+            <span><select value={order.status} onChange={e=>updateOrderStatus(order.id,e.target.value)}>{['received','awaiting_confirmation','confirmed','in_production','ready_for_dispatch','dispatched','delivered','cancelled'].map(status=><option key={status} value={status}>{status.replaceAll('_',' ')}</option>)}</select></span>
+            <span>{money(Number(order.total_amount||0))}<small>{order.payment_status}</small></span>
+          </div>)}
+          {!orders.length&&<p className="empty-admin">No orders yet. New customer orders will appear here.</p>}
         </div>
-        {tab==='orders' ? (
-          <>
-            <div className="admin-stat"><span>Orders received</span><b>{orders.length}</b></div>
-            <div className="admin-table">
-              <div className="admin-row admin-header"><span>Order</span><span>Customer</span><span>Date</span><span>Status</span><span>Total</span></div>
-              {orders.map(order=>(
-                <div className="admin-row" key={order.id}>
-                  <span>{order.order_number}</span><span>{order.customer_name}</span>
-                  <span>{new Date(order.created_at).toLocaleDateString()}</span>
-                  <span><em>{order.status}</em></span><span>{money(order.total_amount||0)}</span>
-                </div>
-              ))}
-              {!orders.length && <p className="empty-admin">No orders yet. New customer orders will appear here.</p>}
-            </div>
-          </>
-        ) : <ProductAdmin products={products} setProducts={setProducts}/>}
-      </section>
-    </main>
-  );
+      </>}
+      {tab==='products'&&<ProductAdmin products={products} setProducts={setProducts}/>}
+      {tab==='enquiries'&&<div className="admin-table">
+        <div className="admin-row admin-header"><span>Received</span><span>Name</span><span>Email</span><span>Subject</span><span>Message</span></div>
+        {enquiries.map(item=><div className="admin-row" key={item.id}><span>{new Date(item.created_at).toLocaleDateString()}</span><span>{item.name}</span><span>{item.email}</span><span>{item.subject}</span><span>{item.message}</span></div>)}
+        {!enquiries.length&&<p className="empty-admin">No customer enquiries yet.</p>}
+      </div>}
+    </section>
+  </main>;
 }
-function ProductAdmin({ products, setProducts }: { products: Product[]; setProducts: (p: Product[]) => void }) {
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('Curated gift sets');
-  const [description, setDescription] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
 
-  const createProduct = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!supabase) {
-      setMessage('Connect Supabase before adding catalogue items.');
-      return;
-    }
+function ProductAdmin({products,setProducts}:{products:Product[];setProducts:(p:Product[])=>void}) {
+  const [catalogue,setCatalogue]=useState<Product[]>([]);
+  const [name,setName]=useState('');
+  const [price,setPrice]=useState('');
+  const [category,setCategory]=useState('Curated gift sets');
+  const [description,setDescription]=useState('');
+  const [photo,setPhoto]=useState<File|null>(null);
+  const [saving,setSaving]=useState(false);
+  const [message,setMessage]=useState('');
 
-    setSaving(true);
-    setMessage('');
-    const slug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const loadCatalogue=async()=>{
+    if(!supabase)return;
+    const {data,error}=await supabase.from('products').select('*').order('created_at',{ascending:false});
+    if(error){setMessage('Unable to load the catalogue. Check the Supabase connection and staff permissions.');return;}
+    setCatalogue((data||[]).map((p:any)=>({...p,active:p.is_active,personalised:p.is_personalisable,featured:p.is_featured,occasion:p.occasions||[],imageUrls:p.image_urls||[]})));
+  };
+  useEffect(()=>{loadCatalogue();},[]);
 
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .insert({
-          name,
-          slug,
-          price: Number(price),
-          category,
-          description,
-          is_active: true,
-          is_personalisable: true,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setProducts([
-          ...products,
-          {
-            ...data,
-            active: data.is_active,
-            personalised: data.is_personalisable,
-            featured: false,
-            occasion: data.occasions || [],
-          } as Product,
-        ]);
-      }
-
-      setName('');
-      setPrice('');
-      setDescription('');
-      setMessage('Product created successfully.');
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'We could not create this product. Please try again.');
-    } finally {
-      setSaving(false);
-    }
+  const uploadPhoto=async(product:Product,file:File)=>{
+    if(!supabase)return;
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){setMessage('Use an original JPG, PNG or WebP photograph under 8 MB.');return;}
+    setSaving(true);setMessage('');
+    try{
+      const extension=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+      const path=product.id+'/'+crypto.randomUUID()+'.'+extension;
+      const {error:uploadError}=await supabase.storage.from('one-o-product-images').upload(path,file,{contentType:file.type,cacheControl:'3600',upsert:false});
+      if(uploadError)throw uploadError;
+      const {data:publicData}=supabase.storage.from('one-o-product-images').getPublicUrl(path);
+      const urls=[publicData.publicUrl,...(product.imageUrls||[])].slice(0,8);
+      const {data,error}=await supabase.from('products').update({image_urls:urls,is_active:true,updated_at:new Date().toISOString()}).eq('id',product.id).select().single();
+      if(error)throw error;
+      const mapped={...product,...data,active:true,personalised:data.is_personalisable,featured:data.is_featured,occasion:data.occasions||[],imageUrls:data.image_urls||urls};
+      setCatalogue(old=>old.map(p=>p.id===product.id?mapped:p));
+      setProducts(old=>[...old.filter(p=>p.id!==mapped.id),mapped]);
+      setMessage('Photograph uploaded. This product is now published in the storefront.');
+    }catch(error){setMessage(error instanceof Error?error.message:'We could not upload that photograph. Please try again.');}
+    finally{setSaving(false);}
   };
 
-  return (
-    <>
-      <div className="admin-stat">
-        <span>Active catalogue items</span>
-        <b>{products.length}</b>
+  const createProduct=async(event:React.FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();
+    if(!supabase){setMessage('Connect Supabase before adding catalogue items.');return;}
+    if(!photo){setMessage('Add an original product photograph before publishing this item.');return;}
+    if(!['image/jpeg','image/png','image/webp'].includes(photo.type)||photo.size>8*1024*1024){setMessage('Use an original JPG, PNG or WebP photograph under 8 MB.');return;}
+    setSaving(true);setMessage('');
+    const slug=name.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    try{
+      const {data,error}=await supabase.from('products').insert({name:name.trim(),slug,price:Number(price),category,description:description.trim(),is_active:false,is_personalisable:true}).select().single();
+      if(error)throw error;
+      const draft={...data,active:false,personalised:data.is_personalisable,featured:false,occasion:data.occasions||[],imageUrls:[]};
+      setCatalogue(old=>[draft,...old]);
+      await uploadPhoto(draft,photo);
+      setName('');setPrice('');setDescription('');setPhoto(null);
+    }catch(error){setMessage(error instanceof Error?error.message:'We could not create this product. Please try again.');}
+    finally{setSaving(false);}
+  };
+
+  return <>
+    <div className="admin-stat"><span>Catalogue products</span><b>{catalogue.length}</b></div>
+    <form className="admin-product-form" onSubmit={createProduct}>
+      <h2>Add a product with its real photograph</h2>
+      <p>Only owner-supplied product photography is published. AI-generated and stock product imagery is not accepted in this workflow.</p>
+      <label>Product name<input value={name} onChange={e=>setName(e.target.value)} required/></label>
+      <div className="field-row">
+        <label>Price (₦)<input type="number" min="1" value={price} onChange={e=>setPrice(e.target.value)} required/></label>
+        <label>Category<select value={category} onChange={e=>setCategory(e.target.value)}><option>Curated gift sets</option><option>Resin keepsakes</option><option>Corporate gifting</option></select></label>
       </div>
-      <form className="admin-product-form" onSubmit={createProduct}>
-        <h2>Add a catalogue item</h2>
-        <label>
-          Product name
-          <input value={name} onChange={event => setName(event.target.value)} required />
-        </label>
-        <div className="field-row">
-          <label>
-            Price (₦)
-            <input type="number" min="1" value={price} onChange={event => setPrice(event.target.value)} required />
-          </label>
-          <label>
-            Category
-            <select value={category} onChange={event => setCategory(event.target.value)}>
-              <option>Curated gift sets</option>
-              <option>Resin keepsakes</option>
-              <option>Corporate gifting</option>
-            </select>
-          </label>
-        </div>
-        <label>
-          Description
-          <textarea value={description} onChange={event => setDescription(event.target.value)} required />
-        </label>
-        <button className="button dark" disabled={saving}>
-          {saving ? 'Saving...' : 'Add product'}
-        </button>
-        {message && <p role="status">{message}</p>}
-      </form>
-      <div className="admin-table">
-        {products.map(product => (
-          <div className="admin-row" key={product.id}>
-            <span>{product.name}</span>
-            <span>{product.category}</span>
-            <span>{money(product.price)}</span>
-            <span>{product.active ? 'Active' : 'Inactive'}</span>
-          </div>
-        ))}
-      </div>
-    </>
-  );
+      <label>Description<textarea value={description} onChange={e=>setDescription(e.target.value)} required/></label>
+      <label>Original product photograph<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPhoto(e.target.files?.[0]||null)} required/><small>JPG, PNG or WebP · Maximum 8 MB</small></label>
+      <button className="button dark" disabled={saving}>{saving?'Saving product and photograph…':'Create and publish product'}</button>
+      {message&&<p role="status">{message}</p>}
+    </form>
+    <div className="admin-product-list">{catalogue.map(product=><article className="admin-product-item" key={product.id}>
+      {product.imageUrls?.[0]?<img src={product.imageUrls[0]} alt={product.name}/>:<div className="admin-photo-pending">No photograph uploaded</div>}
+      <div><b>{product.name}</b><small>{product.category} · {money(product.price)}</small><small>{product.active?'Published':'Draft — not visible in the shop'}</small></div>
+      <label className="photo-replace">Upload / replace photograph<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0];if(file)uploadPhoto(product,file);e.currentTarget.value='';}}/></label>
+    </article>)}</div>
+  </>;
 }
 export default App;
