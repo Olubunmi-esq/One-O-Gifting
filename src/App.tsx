@@ -169,7 +169,7 @@ function Admin({products,setProducts,onExit}:{products:Product[];setProducts:Rea
   </main>;
 }
 
-function ProductAdmin({products,setProducts}:{products:Product[];setProducts:(p:Product[])=>void}) {
+function ProductAdmin({products,setProducts}:{products:Product[];setProducts:React.Dispatch<React.SetStateAction<Product[]>>}) {
   const [catalogue,setCatalogue]=useState<Product[]>([]);
   const [name,setName]=useState('');
   const [price,setPrice]=useState('');
