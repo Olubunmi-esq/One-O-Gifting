@@ -129,5 +129,112 @@ function Admin({products,setProducts,onExit}:{products:Product[];setProducts:(p:
     </main>
   );
 }
-function ProductAdmin({products,setProducts}:{products:Product[];setProducts:(p:Product[])=>void}){const [name,setName]=useState(''),[price,setPrice]=useState(''),[category,setCategory]=useState('Curated gift sets'),[description,setDescription]=useState(''),[saving,setSaving]=useState(false),[message,setMessage]=useState('');return <><div className="admin-stat"><span>Active catalogue items</span><b>{products.length}</b></div><form className="admin-product-form" onSubmit={async e=>{e.preventDefault();if(!supabase)return;setSaving(true);const slug=name.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');const {data,error}=await supabase.from('products').insert({name,slug,price:Number(price),category,description,is_active:true,is_personalisable:true}).select().single();setMessage(error?.message||'Product created.');if(data)setProducts([...products,{...data,active:data.is_active,personalised:data.is_personalisable,featured:false,occasion:[]}]);setName('');setPrice('');setDescription('');setSaving(false)}}}><h2>Add a catalogue item</h2><label>Product name<input value={name} onChange={e=>setName(e.target.value)} required/></label><div className="field-row"><label>Price (₦)<input type="number" min="0" value={price} onChange={e=>setPrice(e.target.value)} required/></label><label>Category<select value={category} onChange={e=>setCategory(e.target.value)}><option>Curated gift sets</option><option>Resin keepsakes</option><option>Corporate gifting</option></select></label></div><label>Description<textarea value={description} onChange={e=>setDescription(e.target.value)} required/></label><button className="button dark" disabled={saving}>{saving?'Saving...':'Add product'}</button>{message&&<p>{message}</p>}</form><div className="admin-table">{products.map(p=><div className="admin-row" key={p.id}><span>{p.name}</span><span>{p.category}</span><span>{money(p.price)}</span><span>{p.active?'Active':'Inactive'}</span></div>)}</div></>}
+function ProductAdmin({ products, setProducts }: { products: Product[]; setProducts: (p: Product[]) => void }) {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState('Curated gift sets');
+  const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const createProduct = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase) {
+      setMessage('Connect Supabase before adding catalogue items.');
+      return;
+    }
+
+    setSaving(true);
+    setMessage('');
+    const slug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert({
+          name,
+          slug,
+          price: Number(price),
+          category,
+          description,
+          is_active: true,
+          is_personalisable: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setProducts([
+          ...products,
+          {
+            ...data,
+            active: data.is_active,
+            personalised: data.is_personalisable,
+            featured: false,
+            occasion: data.occasions || [],
+          } as Product,
+        ]);
+      }
+
+      setName('');
+      setPrice('');
+      setDescription('');
+      setMessage('Product created successfully.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'We could not create this product. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="admin-stat">
+        <span>Active catalogue items</span>
+        <b>{products.length}</b>
+      </div>
+      <form className="admin-product-form" onSubmit={createProduct}>
+        <h2>Add a catalogue item</h2>
+        <label>
+          Product name
+          <input value={name} onChange={event => setName(event.target.value)} required />
+        </label>
+        <div className="field-row">
+          <label>
+            Price (₦)
+            <input type="number" min="1" value={price} onChange={event => setPrice(event.target.value)} required />
+          </label>
+          <label>
+            Category
+            <select value={category} onChange={event => setCategory(event.target.value)}>
+              <option>Curated gift sets</option>
+              <option>Resin keepsakes</option>
+              <option>Corporate gifting</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          Description
+          <textarea value={description} onChange={event => setDescription(event.target.value)} required />
+        </label>
+        <button className="button dark" disabled={saving}>
+          {saving ? 'Saving...' : 'Add product'}
+        </button>
+        {message && <p role="status">{message}</p>}
+      </form>
+      <div className="admin-table">
+        {products.map(product => (
+          <div className="admin-row" key={product.id}>
+            <span>{product.name}</span>
+            <span>{product.category}</span>
+            <span>{money(product.price)}</span>
+            <span>{product.active ? 'Active' : 'Inactive'}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 export default App;
