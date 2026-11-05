@@ -50,3 +50,108 @@ insert into public.products(name,slug,description,price,category,occasions,is_pe
 ('Personalised Name Plaque','resin-name-plaque','A one-of-a-kind name plaque, finished by hand for a desk, shelf or bedside.',22000,'Resin keepsakes',array['Housewarming','Birthday','Appreciation'],true,false,true),
 ('The Signature Corporate Box','corporate-signature-box','A considered branded gifting experience for teams, clients and important milestones.',85000,'Corporate gifting',array['Corporate','Appreciation'],true,false,true)
 on conflict(slug) do nothing;
+
+
+-- Public storefront images are uploaded only by authorised ONE O staff.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('one-o-product-images','one-o-product-images',true,8388608,array['image/jpeg','image/png','image/webp'])
+on conflict (id) do update set public=true, file_size_limit=8388608, allowed_mime_types=array['image/jpeg','image/png','image/webp'];
+
+create policy "Public can view ONE O product photographs"
+on storage.objects for select
+using (bucket_id='one-o-product-images');
+
+create policy "ONE O staff can upload product photographs"
+on storage.objects for insert to authenticated
+with check (bucket_id='one-o-product-images' and public.has_staff_role());
+
+create policy "ONE O staff can update product photographs"
+on storage.objects for update to authenticated
+using (bucket_id='one-o-product-images' and public.has_staff_role())
+with check (bucket_id='one-o-product-images' and public.has_staff_role());
+
+create policy "ONE O staff can delete product photographs"
+on storage.objects for delete to authenticated
+using (bucket_id='one-o-product-images' and public.has_staff_role());
+
+-- Atomic order creation: order and all line items commit together, or none do.
+create or replace function public.create_order_with_items(p_order jsonb, p_items jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_item jsonb;
+  v_product public.products%rowtype;
+  v_quantity integer;
+  v_subtotal numeric(12,2) := 0;
+  v_order public.orders%rowtype;
+begin
+  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 30 then
+    raise exception 'Invalid order items';
+  end if;
+
+  for v_item in select value from jsonb_array_elements(p_items)
+  loop
+    if coalesce(v_item->>'product_id','') = '' then raise exception 'Invalid product'; end if;
+    v_quantity := (v_item->>'quantity')::integer;
+    if v_quantity < 1 or v_quantity > 20 then raise exception 'Invalid quantity'; end if;
+
+    select * into v_product
+    from public.products
+    where id = (v_item->>'product_id')::uuid and is_active = true
+    for update;
+
+    if not found then raise exception 'A selected product is unavailable'; end if;
+    if v_product.track_inventory and v_product.stock_quantity < v_quantity then
+      raise exception 'Insufficient stock for %', v_product.name;
+    end if;
+
+    if v_product.track_inventory then
+      update public.products
+      set stock_quantity = stock_quantity - v_quantity, updated_at = now()
+      where id = v_product.id;
+    end if;
+    v_subtotal := v_subtotal + (v_product.price * v_quantity);
+  end loop;
+
+  insert into public.orders (
+    customer_name, customer_email, customer_phone, recipient_name, recipient_phone,
+    address_line1, address_line2, city, state, postal_code, delivery_note, gift_message,
+    subtotal, delivery_fee, total_amount, status, payment_status
+  ) values (
+    left(trim(p_order->>'customer_name'),160),
+    lower(trim(p_order->>'customer_email')),
+    left(trim(p_order->>'customer_phone'),40),
+    left(trim(p_order->>'recipient_name'),160),
+    left(trim(p_order->>'recipient_phone'),40),
+    left(trim(p_order->>'address_line1'),240),
+    left(coalesce(p_order->>'address_line2',''),240),
+    left(trim(p_order->>'city'),100),
+    left(trim(p_order->>'state'),100),
+    left(coalesce(p_order->>'postal_code',''),30),
+    left(coalesce(p_order->>'delivery_note',''),1000),
+    left(coalesce(p_order->>'gift_message',''),1000),
+    v_subtotal, 0, v_subtotal, 'received', 'unpaid'
+  ) returning * into v_order;
+
+  for v_item in select value from jsonb_array_elements(p_items)
+  loop
+    select * into v_product from public.products where id = (v_item->>'product_id')::uuid;
+    v_quantity := (v_item->>'quantity')::integer;
+    insert into public.order_items (
+      order_id, product_id, product_name, unit_price, quantity, personalisation_note, line_total
+    ) values (
+      v_order.id, v_product.id, v_product.name, v_product.price, v_quantity,
+      case when v_product.is_personalisable then left(coalesce(v_item->>'personalisation_note',''),1000) else null end,
+      v_product.price * v_quantity
+    );
+  end loop;
+
+  return jsonb_build_object('id',v_order.id,'order_number',v_order.order_number,'subtotal',v_subtotal);
+end;
+$$;
+
+revoke all on function public.create_order_with_items(jsonb,jsonb) from public, anon, authenticated;
+grant execute on function public.create_order_with_items(jsonb,jsonb) to service_role;
