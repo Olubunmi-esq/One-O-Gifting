@@ -15,6 +15,7 @@ Deno.serve(async req => {
   try {
     const b = await req.json();
     const email = String(b.email || '').trim().toLowerCase();
+    if (b.consent !== true) return reply({ error: 'Please confirm that you agree to receive ONE O updates.' }, 400);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return reply({ error: 'Please provide a valid email address.' }, 400);
     const ip = req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
