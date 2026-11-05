@@ -1,9 +1,17 @@
-export type Product = { id:string; slug:string; name:string; description:string; price:number; category:string; occasion:string[]; image:string; personalised:boolean; featured:boolean; active:boolean };
-export const demoProducts:Product[]=[
-{id:'p1',slug:'the-keepsake-box',name:'The Keepsake Box',description:'A considered collection of little things, made personal and presented to be remembered.',price:45000,category:'Curated gift sets',occasion:['Birthday','Anniversary','Thank you'],image:'',personalised:true,featured:true,active:true},
-{id:'p2',slug:'resin-memory-heart',name:'The Memory Heart',description:'A handcrafted resin keepsake created around a name, date or sentiment that matters.',price:18000,category:'Resin keepsakes',occasion:['Anniversary','Wedding','Just because'],image:'',personalised:true,featured:true,active:true},
-{id:'p3',slug:'the-desk-edit',name:'The Desk Edit',description:'A thoughtful desk companion set for the people who make work meaningful.',price:52000,category:'Corporate gifting',occasion:['Appreciation','Retirement','Corporate'],image:'',personalised:true,featured:true,active:true},
-{id:'p4',slug:'little-love-set',name:'A Little Love',description:'A small, personal gesture for the person who makes ordinary days feel special.',price:26000,category:'Curated gift sets',occasion:['Birthday','Love','Just because'],image:'',personalised:true,featured:false,active:true},
-{id:'p5',slug:'resin-name-plaque',name:'Personalised Name Plaque',description:'A one-of-a-kind name plaque, finished by hand for a desk, shelf or bedside.',price:22000,category:'Resin keepsakes',occasion:['Housewarming','Birthday','Appreciation'],image:'',personalised:true,featured:false,active:true},
-{id:'p6',slug:'corporate-signature-box',name:'The Signature Corporate Box',description:'A considered branded gifting experience for teams, clients and important milestones.',price:85000,category:'Corporate gifting',occasion:['Corporate','Appreciation'],image:'',personalised:true,featured:false,active:true}
-];
+export type Product = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  occasion: string[];
+  imageUrls: string[];
+  personalised: boolean;
+  featured: boolean;
+  active: boolean;
+};
+
+// No sample products are published as real stock. The catalogue is populated
+// only from the connected ONE O database and owner-approved product records.
+export const demoProducts: Product[] = [];
