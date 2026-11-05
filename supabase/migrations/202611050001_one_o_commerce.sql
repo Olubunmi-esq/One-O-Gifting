@@ -155,3 +155,44 @@ $$;
 
 revoke all on function public.create_order_with_items(jsonb,jsonb) from public, anon, authenticated;
 grant execute on function public.create_order_with_items(jsonb,jsonb) to service_role;
+
+
+-- Database-backed rate limiting for public Edge Functions.
+create table public.request_rate_limits (
+  key_hash text primary key,
+  window_started_at timestamptz not null,
+  request_count integer not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table public.request_rate_limits enable row level security;
+
+create or replace function public.consume_request_rate_limit(
+  p_key_hash text,
+  p_limit integer,
+  p_window_seconds integer
+) returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer;
+begin
+  insert into public.request_rate_limits(key_hash,window_started_at,request_count,updated_at)
+  values(p_key_hash,now(),1,now())
+  on conflict(key_hash) do update set
+    window_started_at = case
+      when public.request_rate_limits.window_started_at < now() - make_interval(secs => p_window_seconds)
+      then now() else public.request_rate_limits.window_started_at end,
+    request_count = case
+      when public.request_rate_limits.window_started_at < now() - make_interval(secs => p_window_seconds)
+      then 1 else public.request_rate_limits.request_count + 1 end,
+    updated_at = now()
+  returning request_count into v_count;
+
+  return v_count <= p_limit;
+end;
+$$;
+
+revoke all on function public.consume_request_rate_limit(text,integer,integer) from public, anon, authenticated;
+grant execute on function public.consume_request_rate_limit(text,integer,integer) to service_role;
