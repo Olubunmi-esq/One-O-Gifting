@@ -1,7 +1,8 @@
 import { useEffect,useMemo,useState } from 'react';
 import { ArrowRight,ArrowUpRight,Check,ChevronDown,Heart,Menu,Minus,Plus,ShoppingBag,X,PackageCheck,Instagram,Mail,MapPin,Lock,LogOut,LayoutDashboard,ClipboardList,Boxes } from 'lucide-react';
 import { demoProducts, type Product } from './data/products';
-import { supabase,backendReady } from './lib/supabase';
+import { supabase } from './lib/supabase';
+import { calculateCartSubtotal, normaliseQuantity } from './lib/commerce';
 type CartLine={product:Product;quantity:number;note:string};
 type Page='home'|'shop'|'story'|'corporate'|'contact'|'checkout'|'admin';
 const money=(n:number)=>new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0}).format(n);
@@ -15,9 +16,9 @@ function App(){
  const navigate=(p:Page,path?:string)=>{setPage(p);history.pushState({},'',path||({home:'/',shop:'/shop',story:'/our-story',corporate:'/corporate-gifting',contact:'/contact',checkout:'/checkout',admin:'/admin'} as Record<Page,string>)[p]);setMobile(false);setDrawer(false);window.scrollTo(0,0)};
  useEffect(()=>{const f=()=>{const p=location.pathname;setPage(p.startsWith('/admin')?'admin':p==='/shop'?'shop':p==='/our-story'?'story':p==='/corporate-gifting'?'corporate':p==='/contact'?'contact':p==='/checkout'?'checkout':'home')};addEventListener('popstate',f);return()=>removeEventListener('popstate',f)},[]);
  const add=(product:Product)=>{setCart(old=>{const found=old.find(x=>x.product.id===product.id);return found?old.map(x=>x.product.id===product.id?{...x,quantity:x.quantity+1}:x):[...old,{product,quantity:1,note:''}]});setDrawer(true)};
- const count=cart.reduce((n,x)=>n+x.quantity,0),subtotal=cart.reduce((n,x)=>n+x.product.price*x.quantity,0);
+ const count=cart.reduce((n,x)=>n+x.quantity,0),subtotal=calculateCartSubtotal(cart.map(x=>({unitPrice:x.product.price,quantity:x.quantity})));
  const filtered=useMemo(()=>products.filter(p=>p.active&&(category==='All gifts'||p.category===category||p.occasion.includes(category))&&(p.name+' '+p.description+' '+p.category).toLowerCase().includes(search.toLowerCase())),[products,category,search]);
- const updateQty=(id:string,delta:number)=>setCart(old=>old.map(x=>x.product.id===id?{...x,quantity:x.quantity+delta}:x).filter(x=>x.quantity>0));
+ const updateQty=(id:string,delta:number)=>setCart(old=>old.map(x=>x.product.id===id?{...x,quantity:normaliseQuantity(x.quantity+delta)}:x));
  const updateNote=(id:string,note:string)=>setCart(old=>old.map(x=>x.product.id===id?{...x,note}:x));
  return <><div className="announcement">Thoughtful gifting, made personal. <span>Discover the ONE O experience</span></div><header className="header"><button className="icon-btn mobile-toggle" onClick={()=>setMobile(!mobile)} aria-label="Menu"><Menu/></button><button className="wordmark" onClick={()=>navigate('home')}>ONE O<span>MADE WITH YOU IN MIND</span></button><nav className={mobile?'nav open':'nav'}><button onClick={()=>navigate('shop')}>Shop all</button><button onClick={()=>navigate('shop')}>Gift collections</button><button onClick={()=>navigate('corporate')}>Corporate gifting</button><button onClick={()=>navigate('story')}>Our story</button></nav><div className="header-actions"><button className="icon-btn" aria-label="Instagram"><Instagram/></button><button className="bag-btn" onClick={()=>setDrawer(true)}><ShoppingBag size={19}/><span>Bag</span><b>{count}</b></button></div></header>
  {page==='home'&&<><main><section className="hero"><div className="hero-copy"><p className="eyebrow">THE ART OF THOUGHTFUL GIVING</p><h1>Some gifts say<br/><em>everything.</em></h1><p className="hero-text">The best gifts do more than mark a moment. They make someone feel seen. Discover meaningful pieces, thoughtfully personalised and made with the recipient in mind.</p><button className="button dark" onClick={()=>navigate('shop')}>Find a meaningful gift <ArrowUpRight size={17}/></button><div className="hero-note"><span>01 / 03</span><span>PERSONALISED · HANDCRAFTED · THOUGHTFUL</span></div></div><div className="hero-art"><div className="art-sun"/><div className="gift gift-one"><span>ONE O</span></div><div className="gift gift-two"/><div className="art-ribbon"/><div className="art-caption">A little thought<br/>goes a long way.</div></div></section>
