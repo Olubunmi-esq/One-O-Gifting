@@ -43,6 +43,91 @@ function EnquiryForm(){const [sent,setSent]=useState(false);return <form classNa
 function CorporateForm(){return <div className="corporate-form"><h2>Tell us what you have in mind.</h2><EnquiryForm/></div>}
 function Newsletter(){const [done,setDone]=useState(false);return <form className="newsletter" onSubmit={async e=>{e.preventDefault();const email=String(new FormData(e.currentTarget).get('email'));if(!supabase){alert('The newsletter service is not connected yet.');return}const {error}=await supabase.functions.invoke('subscribe-newsletter',{body:{email}});if(error){alert('We could not complete your subscription. Please try again.');return}setDone(true)}}><input type="email" name="email" placeholder="Your email address" required/><button aria-label="Subscribe"><ArrowRight size={17}/></button>{done&&<small>You're on the list. Thank you.</small>}</form>}
 function Checkout({cart,subtotal,updateQty,updateNote,onBack,onComplete}:{cart:CartLine[];subtotal:number;updateQty:(id:string,d:number)=>void;updateNote:(id:string,n:string)=>void;onBack:()=>void;onComplete:(id:string)=>void}){const [busy,setBusy]=useState(false),[error,setError]=useState('');return <main className="page-wrap checkout-page"><button className="back-link" onClick={onBack}>← Continue shopping</button><p className="eyebrow">THE FINAL DETAILS</p><h1>Let's get this <em>to them.</em></h1><div className="checkout-layout"><form className="form-card checkout-form" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');const f=new FormData(e.currentTarget);const payload={customer:{name:f.get('name'),email:f.get('email'),phone:f.get('phone')},delivery:{recipient_name:f.get('recipient'),recipient_phone:f.get('recipient_phone'),address_line1:f.get('address'),city:f.get('city'),state:f.get('state'),postal_code:f.get('postal'),delivery_note:f.get('delivery_note')},items:cart.map(x=>({product_id:x.product.id,quantity:x.quantity,personalisation_note:x.note})),gift_message:f.get('gift_message')};try{if(!supabase)throw new Error('The ordering system is not connected yet. Please contact ONE O to place this order.');const {data,error}=await supabase.functions.invoke('create-order',{body:payload});if(error)throw error;onComplete(data.order_number||data.id)}catch(err:any){setError(err.message||'We could not submit your order. Please try again.')}finally{setBusy(false)}}}><h2>Your details</h2><div className="field-row"><label>Full name<input name="name" required autoComplete="name"/></label><label>Email address<input type="email" name="email" required autoComplete="email"/></label></div><label>Phone number<input name="phone" required autoComplete="tel" placeholder="+234"/></label><div className="form-divider"/><h2>Delivery details</h2><label>Recipient's name<input name="recipient" required/></label><label>Recipient's phone number<input name="recipient_phone" required placeholder="+234"/></label><label>Delivery address<input name="address" required placeholder="House number, street and area"/></label><div className="field-row"><label>City / town<input name="city" required/></label><label>State<input name="state" required placeholder="e.g. Oyo"/></label></div><label>Postal code (if applicable)<input name="postal"/></label><label>Delivery instructions<textarea name="delivery_note" rows={2}/></label><div className="form-divider"/><h2>A note from you</h2><label>Gift message (optional)<textarea name="gift_message" rows={3} placeholder="Write a message to include with the gift..."/></label><p className="fine-print">Your order is a request until our team confirms availability, delivery fee, production timeline and payment instructions. Please do not send payment until you receive an official confirmation from ONE O.</p>{error&&<p className="error">{error}</p>}<button className="button dark full" disabled={busy||!cart.length}>{busy?'Submitting...':'Submit order request'} <ArrowRight size={16}/></button></form><aside className="order-summary"><h2>Your order</h2>{cart.map(x=><div className="summary-line" key={x.product.id}><div><b>{x.product.name}</b><small>{x.quantity} × {money(x.product.price)}</small>{x.product.personalised&&<textarea placeholder="Personalisation details (name, colour, date...)" value={x.note} onChange={e=>updateNote(x.product.id,e.target.value)}/>}</div><strong>{money(x.product.price*x.quantity)}</strong><div className="qty"><button type="button" onClick={()=>updateQty(x.product.id,-1)}><Minus size={12}/></button>{x.quantity}<button type="button" onClick={()=>updateQty(x.product.id,1)}><Plus size={12}/></button></div></div>)}<div className="summary-total"><span>Subtotal</span><b>{money(subtotal)}</b></div><small>Delivery fee will be confirmed based on the destination.</small></aside></div></main>}
-function Admin({products,setProducts,onExit}:{products:Product[];setProducts:(p:Product[])=>void;onExit:()=>void}){const [session,setSession]=useState<any>(null),[tab,setTab]=useState('orders'),[orders,setOrders]=useState<any[]>([]),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(false);useEffect(()=>{if(supabase){supabase.auth.getSession().then(({data})=>setSession(data.session));const {data}=supabase.auth.onAuthStateChange((_e,s)=>setSession(s));return()=>data.subscription.unsubscribe()}},[]);useEffect(()=>{if(session&&supabase){supabase.from('orders').select('*,order_items(*)').order('created_at',{ascending:false}).then(({data})=>setOrders(data||[]))}},[session]);const signIn=async(e:any)=>{e.preventDefault();if(!supabase){setError('Connect Supabase before using the admin area.');return}setLoading(true);const {error}=await supabase.auth.signInWithPassword({email,password});setError(error?.message||'');setLoading(false)};if(!session)return <main className="admin-login"><div className="admin-login-card"><span className="admin-symbol">ONE O</span><p className="eyebrow">PRIVATE ADMINISTRATION</p><h1>Welcome <em>back.</em></h1><p>Sign in with an authorised ONE O administrator account.</p><form onSubmit={signIn}><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<p className="error">{error}</p>}<button className="button dark full" disabled={loading}>{loading?'Signing in...':'Sign in securely'}</button></form><button className="back-link" onClick={onExit}>Return to storefront</button></div></main>;return <main className="admin-page"><aside className="admin-sidebar"><span className="admin-symbol">ONE O</span><p>ADMINISTRATION</p><button className={tab==='orders'?'selected':''} onClick={()=>setTab('orders')}><ClipboardList/> Orders</button><button className={tab==='products'?'selected':''} onClick={()=>setTab('products')}><Boxes/> Products</button><button onClick={onExit}><LayoutDashboard/> Storefront</button><button onClick={()=>supabase?.auth.signOut()}><LogOut/> Sign out</button></aside><section className="admin-content"><div className="admin-top"><div><p className="eyebrow">ONE O CONTROL ROOM</p><h1>{tab==='orders'?'Orders':'Products'}</h1></div><span>{session.user.email}</span></div>{tab==='orders'?<><div className="admin-stat"><span>Orders received</span><b>{orders.length}</b></div><div className="admin-table"><div className="admin-row admin-header"><span>Order</span><span>Customer</span><span>Date</span><span>Status</span><span>Total</span></div>{orders.map(o=><div className="admin-row" key={o.id}><span>{o.order_number}</span><span>{o.customer_name}</span><span>{new Date(o.created_at).toLocaleDateString()}</span><span><em>{o.status}</em></span><span>{money(o.total_amount||0)}</span></div>)}{!orders.length&&<p className="empty-admin">No orders yet. New customer orders will appear here.</p>}</div></>:<ProductAdmin products={products} setProducts={setProducts}/>}</section></main>}
+function Admin({products,setProducts,onExit}:{products:Product[];setProducts:(p:Product[])=>void;onExit:()=>void}) {
+  const [session,setSession]=useState<any>(null);
+  const [tab,setTab]=useState('orders');
+  const [orders,setOrders]=useState<any[]>([]);
+  const [email,setEmail]=useState('');
+  const [password,setPassword]=useState('');
+  const [error,setError]=useState('');
+  const [loading,setLoading]=useState(false);
+
+  useEffect(()=>{
+    if(!supabase) return;
+    supabase.auth.getSession().then(({data})=>setSession(data.session));
+    const {data}=supabase.auth.onAuthStateChange((_event,nextSession)=>setSession(nextSession));
+    return ()=>data.subscription.unsubscribe();
+  },[]);
+
+  useEffect(()=>{
+    if(!session || !supabase) return;
+    supabase.from('orders').select('*,order_items(*)').order('created_at',{ascending:false})
+      .then(({data,error})=>{ if(!error) setOrders(data||[]); });
+  },[session]);
+
+  const signIn=async(e:React.FormEvent<HTMLFormElement>)=>{
+    e.preventDefault();
+    if(!supabase){setError('Connect Supabase before using the admin area.');return;}
+    setLoading(true);
+    const {error:authError}=await supabase.auth.signInWithPassword({email,password});
+    setError(authError?.message||'');
+    setLoading(false);
+  };
+
+  if(!session) {
+    return (
+      <main className="admin-login">
+        <div className="admin-login-card">
+          <span className="admin-symbol">ONE O</span>
+          <p className="eyebrow">PRIVATE ADMINISTRATION</p>
+          <h1>Welcome <em>back.</em></h1>
+          <p>Sign in with an authorised ONE O administrator account.</p>
+          <form onSubmit={signIn}>
+            <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required /></label>
+            <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required /></label>
+            {error && <p className="error">{error}</p>}
+            <button className="button dark full" disabled={loading}>{loading?'Signing in...':'Sign in securely'}</button>
+          </form>
+          <button className="back-link" onClick={onExit}>Return to storefront</button>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="admin-page">
+      <aside className="admin-sidebar">
+        <span className="admin-symbol">ONE O</span>
+        <p>ADMINISTRATION</p>
+        <button className={tab==='orders'?'selected':''} onClick={()=>setTab('orders')}><ClipboardList/> Orders</button>
+        <button className={tab==='products'?'selected':''} onClick={()=>setTab('products')}><Boxes/> Products</button>
+        <button onClick={onExit}><LayoutDashboard/> Storefront</button>
+        <button onClick={()=>supabase?.auth.signOut()}><LogOut/> Sign out</button>
+      </aside>
+      <section className="admin-content">
+        <div className="admin-top">
+          <div><p className="eyebrow">ONE O CONTROL ROOM</p><h1>{tab==='orders'?'Orders':'Products'}</h1></div>
+          <span>{session.user.email}</span>
+        </div>
+        {tab==='orders' ? (
+          <>
+            <div className="admin-stat"><span>Orders received</span><b>{orders.length}</b></div>
+            <div className="admin-table">
+              <div className="admin-row admin-header"><span>Order</span><span>Customer</span><span>Date</span><span>Status</span><span>Total</span></div>
+              {orders.map(order=>(
+                <div className="admin-row" key={order.id}>
+                  <span>{order.order_number}</span><span>{order.customer_name}</span>
+                  <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                  <span><em>{order.status}</em></span><span>{money(order.total_amount||0)}</span>
+                </div>
+              ))}
+              {!orders.length && <p className="empty-admin">No orders yet. New customer orders will appear here.</p>}
+            </div>
+          </>
+        ) : <ProductAdmin products={products} setProducts={setProducts}/>}
+      </section>
+    </main>
+  );
+}
 function ProductAdmin({products,setProducts}:{products:Product[];setProducts:(p:Product[])=>void}){const [name,setName]=useState(''),[price,setPrice]=useState(''),[category,setCategory]=useState('Curated gift sets'),[description,setDescription]=useState(''),[saving,setSaving]=useState(false),[message,setMessage]=useState('');return <><div className="admin-stat"><span>Active catalogue items</span><b>{products.length}</b></div><form className="admin-product-form" onSubmit={async e=>{e.preventDefault();if(!supabase)return;setSaving(true);const slug=name.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');const {data,error}=await supabase.from('products').insert({name,slug,price:Number(price),category,description,is_active:true,is_personalisable:true}).select().single();setMessage(error?.message||'Product created.');if(data)setProducts([...products,{...data,active:data.is_active,personalised:data.is_personalisable,featured:false,occasion:[]}]);setName('');setPrice('');setDescription('');setSaving(false)}}}><h2>Add a catalogue item</h2><label>Product name<input value={name} onChange={e=>setName(e.target.value)} required/></label><div className="field-row"><label>Price (₦)<input type="number" min="0" value={price} onChange={e=>setPrice(e.target.value)} required/></label><label>Category<select value={category} onChange={e=>setCategory(e.target.value)}><option>Curated gift sets</option><option>Resin keepsakes</option><option>Corporate gifting</option></select></label></div><label>Description<textarea value={description} onChange={e=>setDescription(e.target.value)} required/></label><button className="button dark" disabled={saving}>{saving?'Saving...':'Add product'}</button>{message&&<p>{message}</p>}</form><div className="admin-table">{products.map(p=><div className="admin-row" key={p.id}><span>{p.name}</span><span>{p.category}</span><span>{money(p.price)}</span><span>{p.active?'Active':'Inactive'}</span></div>)}</div></>}
 export default App;
