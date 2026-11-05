@@ -28,7 +28,7 @@ Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to a Supabase projec
 ## Supabase setup
 1. Create a Supabase project.
 2. Review and apply `supabase/migrations/202611050001_one_o_commerce.sql`.
-3. Deploy the Edge Function: `supabase functions deploy create-order`.
+3. Deploy the Edge Function: `supabase functions deploy create-order\nsupabase functions deploy create-enquiry\nsupabase functions deploy subscribe-newsletter`.
 4. Set the Edge Function secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `SITE_ORIGIN`.
 5. Create the first administrator using Supabase Auth, then insert their role using the SQL editor:
    `insert into public.user_roles(user_id,role) values ('AUTH_USER_UUID','admin');`
