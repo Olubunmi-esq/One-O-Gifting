@@ -1,21 +1,29 @@
-# ONE O — Meaningful Gifting Commerce
+# ONE O — Meaningful Gifting
 
-ONE O is a customer-facing gifting storefront and a Supabase-backed commerce foundation. Brand promise: **Made with you in mind.**
+**Brand promise:** Made with you in mind.
 
-## Included in this development branch
-- Responsive editorial storefront, story, gifting occasions and corporate gifting pages.
-- Catalogue browsing and product discovery, cart and personalisation notes.
-- Checkout request with customer, recipient and Nigerian delivery address fields.
-- Supabase database migration for catalogue, collections, roles, addresses, enquiries, newsletter, orders and order lines.
-- Server-side order creation function that calculates prices from the database, validates quantities and does not trust browser-submitted prices.
-- Protected staff sign-in area with order list and basic catalogue creation UI.
-- Newsletter and enquiry persistence when Supabase is configured.
+ONE O is a considered gifting house. Personalisation and curated gifting experiences are the core of the brand; handcrafted resin is a distinctive medium within the offer, not the entire identity. The visual direction is warm, personal, contemporary and editorial, using an ivory, espresso, clay and champagne palette.
 
-## Stack
-React 19, TypeScript, Vite, Supabase Auth/Postgres/Edge Functions. The initial repository had Vite/TanStack Start dependencies but no application source files. This implementation deliberately uses a conventional Vite React entry point; TanStack Start is removed from dependencies to avoid retaining an unused server framework. Confirm this choice in Google AI Studio before introducing another framework.
+## Current development scope
 
-## Local setup
-Use Node 20.19+ or 22.12+.
+- Responsive storefront, brand story, gifting occasions, catalogue and corporate gifting enquiry journey.
+- Shopping bag and checkout request with Nigerian customer, recipient and delivery details.
+- Product catalogue sourced from Supabase; the repository deliberately contains no invented sample merchandise or assumed retail prices.
+- Product photography upload through the staff console. New products remain unpublished until an original photograph is uploaded.
+- Supabase Auth staff access, role verification, order management, product catalogue and customer enquiry views.
+- Supabase Postgres migration, Row Level Security, public image storage policies, Edge Functions and database-backed request rate limiting.
+- Server-side price and inventory checks; order header and line items are written atomically in one database transaction.
+- Dependency audit, TypeScript, unit tests and production build in GitHub Actions.
+
+## Technology
+
+React 19, TypeScript, Vite, Supabase Auth, Postgres, Storage and Edge Functions.
+
+The application uses a conventional Vite React frontend. The earlier repository contained framework dependencies but did not include the original frontend source; this implementation does not pretend to reproduce missing source code.
+
+## Local development
+
+Use Node 22.12+.
 
 ```bash
 cp .env.example .env
@@ -23,33 +31,47 @@ npm install
 npm run dev
 ```
 
-Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to a Supabase project. Without them, the storefront displays sample catalogue data, but checkout and administration are unavailable.
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for the project. Without these values, the storefront can render its brand content, but live catalogue, ordering, newsletter, enquiry and administration services will not operate.
 
-## Supabase setup
-1. Create a Supabase project.
-2. Review and apply `supabase/migrations/202611050001_one_o_commerce.sql`.
-3. Deploy the Edge Function: `supabase functions deploy create-order\nsupabase functions deploy create-enquiry\nsupabase functions deploy subscribe-newsletter`.
-4. Set the Edge Function secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `SITE_ORIGIN`.
-5. Create the first administrator using Supabase Auth, then insert their role using the SQL editor:
+## Supabase deployment
+
+1. Create or select the ONE O Supabase project. Do not apply the initial migration to a project containing important existing data without first reviewing its schema and preparing a migration plan.
+2. Apply `supabase/migrations/202611050001_one_o_commerce.sql` using the Supabase CLI or SQL editor. This creates the commerce schema, access policies, image bucket, atomic order function and rate-limit function.
+3. Deploy the public Edge Functions:
+   `supabase functions deploy create-order`
+   `supabase functions deploy create-enquiry`
+   `supabase functions deploy subscribe-newsletter`
+4. Set the Edge Function secret `SITE_ORIGIN` to the exact production storefront origin, for example `https://your-domain.example`. The default origin is local development only.
+5. Configure the frontend build environment with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+6. Create the first administrator in Supabase Auth. Then grant the role from the SQL editor using that Auth user's UUID:
    `insert into public.user_roles(user_id,role) values ('AUTH_USER_UUID','admin');`
-6. Add the public project URL and publishable key to the frontend environment.
+7. Sign in at `/admin`. The console checks the authenticated user's `admin` or `staff` role before showing operational data.
+8. Upload actual product photographs and owner-approved product descriptions, prices, personalisation rules and stock information before publishing catalogue items.
 
-Never put the service-role key in a `VITE_` variable or commit it to Git.
+Supabase Edge Functions use the project-provided server environment. Never expose a service-role key in frontend code, a `VITE_` variable, or Git.
 
-## Operational and launch decisions still required
-- Product photography, exact SKUs, stock levels, final prices and personalisation lead times.
-- Delivery zones, courier partners, delivery pricing and dispatch service-level targets.
-- Business contact details, social links, final privacy/terms/returns/cancellation policies.
-- Payment gateway selection and verified merchant credentials. The current checkout deliberately creates an order request with payment status `unpaid`; the team confirms delivery cost and sends official payment instructions. It does not pretend payment has been collected.
-- Email/SMS provider and transactional templates for order received, confirmation, dispatch and delivery.
-- Admin invitation and staff role management workflow; initial admin role is provisioned securely in SQL.
-- Rate limiting, CAPTCHA/bot controls, monitoring, backups, audit logging and production security review.
+## Photography standard
 
-## Important security notes
-- Public customers cannot directly insert or read orders through table policies. They submit through the Edge Function, which uses the service role server-side and derives prices from active database products.
-- The Edge Function currently has basic input validation but should be protected with a CAPTCHA/rate-limit provider before public launch.
-- Staff dashboard access requires a Supabase Auth account and a row in `user_roles`; never make the first admin role publicly assignable.
-- This is a functional development foundation, not a certified production launch. Run typecheck/build, test migrations and Edge Functions against a non-production Supabase project, and complete the operational items above.
+The storefront must use original photographs of actual ONE O products. AI-generated product images, stock photographs and CSS product illustrations are not substitutes. Product records are not seeded with fabricated product names or prices. The staff console accepts JPG, PNG and WebP files up to 8 MB, stores them in the public-read `one-o-product-images` bucket, and only publishes a new item after its photograph has been uploaded. Until genuine photographs are supplied, the storefront shows a neutral, explicit photography-pending state.
 
-## Git branches
-This work is on `development/one-o-commerce`. The existing `main` branch has not been changed.
+For a coherent catalogue, photograph the actual finished item and its packaging in natural, diffused light; capture a clean front/three-quarter product view, a close-up of material and personalisation, a scale/context view, and a complete gift-set flat lay. Keep backgrounds, lighting and crop treatment consistent across the collection. Do not digitally add product features that are not present on the physical item.
+
+## Order and payment behaviour
+
+Checkout currently creates an **order request**, not a paid order. The database derives product prices from the catalogue, checks inventory and creates the order and its lines atomically. Delivery is not guessed. ONE O confirms delivery cost, production timing and availability before sending official payment instructions.
+
+No payment gateway is represented as connected. Before launch, select and configure a verified Nigerian-market payment provider, implement server-side payment initialisation and webhook verification, and only mark an order paid after a verified provider event. Do not accept screenshots or browser-submitted claims as proof of payment.
+
+## Launch items still requiring owner decisions or external setup
+
+- Actual product photographs and approval of each product's name, price, SKU, description, stock and personalisation options.
+- Production Supabase project, migration application, deployed Edge Functions, first administrator and exact production `SITE_ORIGIN`.
+- Payment gateway credentials and verified webhook integration.
+- Delivery zones, courier arrangements, delivery fees and production/dispatch service levels.
+- Approved business contact details, social links, privacy notice, terms, returns, cancellations and customer communications.
+- Transactional email/SMS provider, message templates, CAPTCHA or stronger bot controls, backups, monitoring and production security review.
+- Browser/device QA, accessibility review and an end-to-end test order against a non-production Supabase project.
+
+## Git workflow
+
+Development is taking place on `development/one-o-commerce` through pull request #1. The existing `main` branch remains unchanged until the owner approves the finished implementation.
