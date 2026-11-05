@@ -1,2 +1,8 @@
 [functions.create-order]
 verify_jwt = false
+
+[functions.create-enquiry]
+verify_jwt = false
+
+[functions.subscribe-newsletter]
+verify_jwt = false
