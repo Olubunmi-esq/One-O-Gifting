@@ -101,11 +101,9 @@ begin
       raise exception 'Insufficient stock for %', v_product.name;
     end if;
 
-    if v_product.track_inventory then
-      update public.products
-      set stock_quantity = stock_quantity - v_quantity, updated_at = now()
-      where id = v_product.id;
-    end if;
+    -- Checkout creates an unpaid order request, not a confirmed sale.
+    -- Do not decrement stock here: staff must confirm availability before
+    -- accepting the order. This check is advisory and does not reserve stock.
     v_subtotal := v_subtotal + (v_product.price * v_quantity);
   end loop;
 
