@@ -42,14 +42,7 @@ insert into public.collections(name,slug,description,sort_order) values
 ('Resin keepsakes','resin-keepsakes','Handcrafted keepsakes made personal.',2),
 ('Corporate gifting','corporate-gifting','Considered gifting for teams, clients and milestones.',3)
 on conflict(slug) do nothing;
-insert into public.products(name,slug,description,price,category,occasions,is_personalisable,is_featured,is_active) values
-('The Keepsake Box','the-keepsake-box','A considered collection of little things, made personal and presented to be remembered.',45000,'Curated gift sets',array['Birthday','Anniversary','Thank you'],true,true,true),
-('The Memory Heart','resin-memory-heart','A handcrafted resin keepsake created around a name, date or sentiment that matters.',18000,'Resin keepsakes',array['Anniversary','Wedding','Just because'],true,true,true),
-('The Desk Edit','the-desk-edit','A thoughtful desk companion set for the people who make work meaningful.',52000,'Corporate gifting',array['Appreciation','Retirement','Corporate'],true,true,true),
-('A Little Love','little-love-set','A small, personal gesture for the person who makes ordinary days feel special.',26000,'Curated gift sets',array['Birthday','Love','Just because'],true,false,true),
-('Personalised Name Plaque','resin-name-plaque','A one-of-a-kind name plaque, finished by hand for a desk, shelf or bedside.',22000,'Resin keepsakes',array['Housewarming','Birthday','Appreciation'],true,false,true),
-('The Signature Corporate Box','corporate-signature-box','A considered branded gifting experience for teams, clients and important milestones.',85000,'Corporate gifting',array['Corporate','Appreciation'],true,false,true)
-on conflict(slug) do nothing;
+
 
 
 -- Public storefront images are uploaded only by authorised ONE O staff.
