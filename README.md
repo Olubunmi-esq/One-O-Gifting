@@ -1,36 +1,21 @@
-# ONE O — Website
+# ONE O — Meaningful Gifting Commerce
 
-A responsive storefront foundation for ONE O, built with TanStack Start, React, TypeScript and Supabase-ready configuration.
+ONE O is a customer-facing gifting storefront and a Supabase-backed commerce foundation. Brand promise: **Made with you in mind.**
 
-## Current scope
+## Included in this development branch
+- Responsive editorial storefront, story, gifting occasions and corporate gifting pages.
+- Catalogue browsing and product discovery, cart and personalisation notes.
+- Checkout request with customer, recipient and Nigerian delivery address fields.
+- Supabase database migration for catalogue, collections, roles, addresses, enquiries, newsletter, orders and order lines.
+- Server-side order creation function that calculates prices from the database, validates quantities and does not trust browser-submitted prices.
+- Protected staff sign-in area with order list and basic catalogue creation UI.
+- Newsletter and enquiry persistence when Supabase is configured.
 
-- Editorial-style homepage and responsive navigation
-- Product catalogue starter with sample product records
-- Occasion/collection discovery section
-- Brand story page
-- Corporate gifting page with indicative package ranges
-- Contact/enquiry page (currently prepares an email using the visitor's email application)
-- Draft privacy and terms pages clearly marked for owner/legal review
-- Local SVG placeholder artwork
-- Supabase environment-variable template
-- Database migration based on the supplied ONE O schema, with a separate security-hardening migration
+## Stack
+React 19, TypeScript, Vite, Supabase Auth/Postgres/Edge Functions. The initial repository had Vite/TanStack Start dependencies but no application source files. This implementation deliberately uses a conventional Vite React entry point; TanStack Start is removed from dependencies to avoid retaining an unused server framework. Confirm this choice in Google AI Studio before introducing another framework.
 
-## Important: this is a redevelopment starter, not a production launch
-
-The supplied materials contained the database schema and Supabase type definitions, but not the original frontend source. This repository therefore establishes a fresh frontend structure and uses sample product presentation data. It does not claim to reproduce the missing original components or live application behaviour.
-
-Before launch:
-1. Replace placeholder SVG artwork with approved ONE O product photography. Do not present concept imagery as photographs of finished products.
-2. Confirm the legal business name, contact information, delivery coverage, customer service workflow and final policies.
-3. Connect a Supabase project and apply migrations in order.
-4. Implement the authenticated admin dashboard and secure server-side enquiry/order workflows.
-5. Configure email delivery, spam protection/rate limiting, analytics and backups.
-6. Test keyboard accessibility, mobile layouts, browser compatibility, forms, RLS and admin permissions.
-7. Review package versions and run a clean install/build in the target deployment environment.
-
-## Local development
-
-Requirements: Node.js 20.19+ or 22.12+, and npm.
+## Local setup
+Use Node 20.19+ or 22.12+.
 
 ```bash
 cp .env.example .env
@@ -38,41 +23,33 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite.
-
-```bash
-npm run typecheck
-npm run build
-```
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to a Supabase project. Without them, the storefront displays sample catalogue data, but checkout and administration are unavailable.
 
 ## Supabase setup
+1. Create a Supabase project.
+2. Review and apply `supabase/migrations/202611050001_one_o_commerce.sql`.
+3. Deploy the Edge Function: `supabase functions deploy create-order`.
+4. Set the Edge Function secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `SITE_ORIGIN`.
+5. Create the first administrator using Supabase Auth, then insert their role using the SQL editor:
+   `insert into public.user_roles(user_id,role) values ('AUTH_USER_UUID','admin');`
+6. Add the public project URL and publishable key to the frontend environment.
 
-The migration in `supabase/migrations/` creates the ONE O catalogue, collections, enquiries, order-request tables, newsletter table, roles and supporting functions. Apply it to a new Supabase project only after reviewing it. If you already have live data in another project, do not run this migration blindly; prepare a data-preserving migration plan first.
+Never put the service-role key in a `VITE_` variable or commit it to Git.
 
-Client-side code may use only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. A Supabase service-role key must remain server-only and must never be committed or exposed through a `VITE_` variable.
+## Operational and launch decisions still required
+- Product photography, exact SKUs, stock levels, final prices and personalisation lead times.
+- Delivery zones, courier partners, delivery pricing and dispatch service-level targets.
+- Business contact details, social links, final privacy/terms/returns/cancellation policies.
+- Payment gateway selection and verified merchant credentials. The current checkout deliberately creates an order request with payment status `unpaid`; the team confirms delivery cost and sends official payment instructions. It does not pretend payment has been collected.
+- Email/SMS provider and transactional templates for order received, confirmation, dispatch and delivery.
+- Admin invitation and staff role management workflow; initial admin role is provisioned securely in SQL.
+- Rate limiting, CAPTCHA/bot controls, monitoring, backups, audit logging and production security review.
 
-The public contact form is intentionally an email handoff at this stage. It does not claim to store enquiries in Supabase. The production enquiry workflow should be implemented through a validated server function or Edge Function, with abuse protection and consent records.
+## Important security notes
+- Public customers cannot directly insert or read orders through table policies. They submit through the Edge Function, which uses the service role server-side and derives prices from active database products.
+- The Edge Function currently has basic input validation but should be protected with a CAPTCHA/rate-limit provider before public launch.
+- Staff dashboard access requires a Supabase Auth account and a row in `user_roles`; never make the first admin role publicly assignable.
+- This is a functional development foundation, not a certified production launch. Run typecheck/build, test migrations and Edge Functions against a non-production Supabase project, and complete the operational items above.
 
-## GitHub
-
-Create an empty GitHub repository named `one-o-web`, then connect this folder using Git:
-
-```bash
-git init
-git add .
-git commit -m "Initial ONE O website foundation"
-git branch -M main
-git remote add origin https://github.com/YOUR-GITHUB-USERNAME/one-o-web.git
-git push -u origin main
-```
-
-Do not commit `.env` or any real credentials.
-
-## Easiest way to publish
-
-1. Download and extract `one-o-web-starter.zip`.
-2. In GitHub, create a new empty repository named `one-o-web` (do not initialise it with a README or licence).
-3. Open the extracted `one-o-web` folder in GitHub Desktop, choose **Add an Existing Repository**, then publish it to GitHub; or use the Git commands above.
-4. Add deployment secrets in your hosting provider's environment settings, not in GitHub source files.
-
-The archive is a source-code starter. A dependency installation and production build still need to be run in your development environment after extraction.
+## Git branches
+This work is on `development/one-o-commerce`. The existing `main` branch has not been changed.
