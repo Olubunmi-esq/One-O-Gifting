@@ -1,0 +1,8 @@
+{
+  "name": "ONE O — Handcrafted Resin Art & Gifting",
+  "description": "Bespoke handcrafted resin art and luxury personalized gifting studio. Artisan geode serving boards, floral preservation keepsakes, gilded resin coaster suites, and tailored commission gifts.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
