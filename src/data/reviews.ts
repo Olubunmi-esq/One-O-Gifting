@@ -1,9 +1,10 @@
 export interface Review {
   id: string
-  productId?: string // Can link directly to a specific product ID
-  giftSetName?: string // Human-friendly name of the gift set ordered
-  collection?: string // Or fall back to a matching collection
-  itemType?: string // Or fall back to item type
+  productId?: string
+  giftSetName?: string
+  collection?: string
+  itemType?: string
+  tags?: string[]
   author: string
   location: string
   rating: number // 1 to 5
@@ -15,21 +16,29 @@ export interface Review {
   helpfulCount: number
 }
 
+export interface ReviewStats {
+  average: number
+  totalCount: number
+  recommendedPercent: number
+  starCounts: Record<number, number>
+}
+
 export const MOCK_REVIEWS: Review[] = [
-  // 1. "With Love" Ready-Made Birthday Gift Box
+  // Birthday Boxes & Packages
   {
     id: 'rev-bday-box-1',
     productId: 'birthday-curated-luxury-gift-box',
     giftSetName: 'The "With Love" Ready-Made Birthday Gift Box',
     collection: 'Birthday Celebrations',
     itemType: 'Ready-Made Gift Boxes & Party Favors',
+    tags: ['birthday', 'gift box', 'frame', 'coasters', 'dish'],
     author: 'Adaora Nwosu',
-    location: 'Lekki Phase 1, Lagos',
+    location: 'Lekki, Lagos',
     rating: 5,
     date: '3 days ago',
-    occasion: 'Best Friend’s 30th Birthday',
-    title: 'She cried happy tears the moment she opened the box',
-    comment: 'I ordered the "With Love" Birthday Gift Box and shared her favorite blush pink color and dried petals with the representative on WhatsApp. Every piece—the photo frame, the pair of coasters, bookmark, and jewelry dish—matched cleanly. My friend keeps the ring dish right beside her bed and still sends me photos of it.',
+    occasion: '30th Birthday',
+    title: 'She loved every matching piece',
+    comment: 'Picked blush pink with dried petals on WhatsApp—the frame, coasters, and ring dish matched neatly and arrived ready to hand over.',
     verifiedBuyer: true,
     helpfulCount: 34
   },
@@ -39,47 +48,67 @@ export const MOCK_REVIEWS: Review[] = [
     giftSetName: 'The "With Love" Ready-Made Birthday Gift Box',
     collection: 'Birthday Celebrations',
     itemType: 'Ready-Made Gift Boxes & Party Favors',
+    tags: ['birthday', 'mum', 'gift box'],
     author: 'Bolanle Ojo',
     location: 'Bodija, Ibadan',
     rating: 5,
     date: '2 weeks ago',
-    occasion: 'Mother’s Birthday Surprise',
-    title: 'Ready to hand over straight out of the delivery bag',
-    comment: 'My mum usually gives away gift items she doesn’t use, so getting her this gift box was the best decision. She put her wedding throwback photo in the frame and uses the coasters every morning for her tea. The handwritten card inside made her smile all week.',
+    occasion: 'Mum’s Birthday',
+    title: 'Ready to gift straight from the bag',
+    comment: 'My mum uses the coasters every morning and keeps her photo in the frame. The handwritten note card inside was a lovely touch.',
     verifiedBuyer: true,
     helpfulCount: 21
   },
   {
-    id: 'rev-bday-box-3',
-    productId: 'birthday-curated-luxury-gift-box',
-    giftSetName: 'The "With Love" Ready-Made Birthday Gift Box',
+    id: 'rev-bday-pkg-1',
+    productId: 'pkg-birthday-luxe',
+    giftSetName: 'Birthday Luxe Package',
     collection: 'Birthday Celebrations',
-    itemType: 'Ready-Made Gift Boxes & Party Favors',
+    itemType: 'Occasion Gift Packages',
+    tags: ['birthday', 'package', 'luxe', 'crown', 'glow', 'mini', 'box'],
     author: 'Seyi Adeyinka',
     location: 'Wuse 2, Abuja',
-    rating: 4,
-    date: '3 weeks ago',
-    occasion: 'Sister’s 25th Birthday',
-    title: 'Beautiful custom work and arrived safely in Abuja',
-    comment: 'Everything inside the gift box came packed in thick protective wrap with zero scratches. Chose emerald colors on WhatsApp and they showed me finished pictures before sending it out. Would happily order another set soon.',
+    rating: 5,
+    date: '1 week ago',
+    occasion: '25th Birthday',
+    title: 'Fast quote and zero delivery damage',
+    comment: 'Got a clear quote on WhatsApp in minutes, approved finished photos before dispatch, and the luxury box reached Abuja spotless.',
     verifiedBuyer: true,
-    helpfulCount: 14
+    helpfulCount: 19
+  },
+  {
+    id: 'rev-bday-kids-1',
+    productId: 'pkg-kids-party-favour',
+    giftSetName: 'Kids Party Favour Pack',
+    collection: 'Birthday Celebrations',
+    itemType: 'Occasion Gift Packages',
+    tags: ['kids', 'party', 'favour', 'keychain', 'bag charm'],
+    author: 'Nneka Okafor',
+    location: 'Ikeja, Lagos',
+    rating: 5,
+    date: '10 days ago',
+    occasion: '7th Birthday Party',
+    title: 'Parents asked where we got the bag charms',
+    comment: 'Ordered 30 themed bag charms with each child’s initial and party tag. Bright colors, smooth edges, and delivered two days early.',
+    verifiedBuyer: true,
+    helpfulCount: 16
   },
 
-  // 2. Executive Desk Nameplate
+  // Executive & Corporate Nameplates, Awards & Packages
   {
     id: 'rev-corp-1',
     productId: 'executive-sculpted-desk-nameplate',
     giftSetName: 'Executive Sculpted Desk Nameplate Block',
     collection: 'Corporate & Office Collections',
     itemType: 'Desk Nameplates & Signage',
-    author: 'Barr. Folashade Adeleke',
+    tags: ['nameplate', 'desk', 'executive', 'office', 'award', 'plaque'],
+    author: 'Barr. Folashade A.',
     location: 'Ikoyi, Lagos',
     rating: 5,
     date: '3 days ago',
-    occasion: 'Promotion to Managing Partner',
-    title: 'Solid, weighty desk piece that commands genuine respect',
-    comment: 'Ordered this for our principal partner in Victoria Island to celebrate his appointment. It has a reassuring solid weight on the desk and clear lettering inside. Delivered within 48 hours to Ikoyi neatly packed in a presentation box.',
+    occasion: 'Partner Promotion',
+    title: 'Solid weight and crisp gold lettering',
+    comment: 'Sits firmly on the desk with sharp, clear lettering sealed inside. Delivered to Ikoyi within 48 hours in a neat presentation box.',
     verifiedBuyer: true,
     helpfulCount: 24
   },
@@ -89,131 +118,258 @@ export const MOCK_REVIEWS: Review[] = [
     giftSetName: 'Executive Sculpted Desk Nameplate Block',
     collection: 'Corporate & Office Collections',
     itemType: 'Desk Nameplates & Signage',
-    author: 'Engr. Babatunde Lawal',
+    tags: ['nameplate', 'office', 'corporate', 'sign'],
+    author: 'Engr. Babatunde L.',
     location: 'Maitama, Abuja',
     rating: 5,
     date: '1 week ago',
-    occasion: 'Executive Office Dedication',
-    title: 'Every client walking into my Abuja office asks who made it',
-    comment: 'Sent my name, title, and preferred colors on WhatsApp after ordering. The ONE O team shared a quick preview before crafting. It arrived safely in Abuja inside bubble foam and a ribboned box.',
+    occasion: 'Office Dedication',
+    title: 'Clients always ask who made it',
+    comment: 'Shared my title and brand colors on WhatsApp and received a preview before casting. Arrived safely in Abuja with zero scratches.',
     verifiedBuyer: true,
     helpfulCount: 19
   },
   {
-    id: 'rev-corp-3',
-    productId: 'executive-sculpted-desk-nameplate',
-    giftSetName: 'Executive Sculpted Desk Nameplate Block',
-    collection: 'Retirement Sets',
-    itemType: 'Desk Nameplates & Signage',
-    author: 'Dr. (Mrs.) Ifeoma Nnamdi',
-    location: 'GRA, Port Harcourt',
+    id: 'rev-corp-pkg-1',
+    productId: 'pkg-conference-souvenir',
+    giftSetName: 'Conference Souvenir Pack',
+    collection: 'Corporate & Office Collections',
+    itemType: 'Occasion Gift Packages',
+    tags: ['corporate', 'conference', 'logo', 'staff', 'client', 'souvenir', 'bulk'],
+    author: 'Chinedu Eze',
+    location: 'Victoria Island, Lagos',
     rating: 5,
     date: '2 weeks ago',
-    occasion: 'Medical Director Send-Off',
-    title: 'Brought happy tears to our retiring Chief Medical Officer',
-    comment: 'We paired this nameplate with the standing desk clock. Seeing his full name and medical title displayed proudly made our whole department smile. The handwritten farewell card sealed in the box completed the gift.',
+    occasion: 'Annual Summit (150 Guests)',
+    title: 'Brand logo came out razor sharp',
+    comment: 'Ordered 150 logo keychains and branded pens in our company colors. Every pack was neatly tagged and delivered ahead of setup.',
+    verifiedBuyer: true,
+    helpfulCount: 28
+  },
+  {
+    id: 'rev-corp-pkg-2',
+    productId: 'pkg-client-gift-box',
+    giftSetName: 'Client Gift Box',
+    collection: 'Corporate & Office Collections',
+    itemType: 'Occasion Gift Packages',
+    tags: ['corporate', 'client', 'staff', 'appreciation', 'box', 'logo'],
+    author: 'Aisha Mohammed',
+    location: 'Garki, Abuja',
+    rating: 4,
+    date: '3 weeks ago',
+    occasion: 'VIP Client Gifting',
+    title: 'Polished corporate sets clients actually keep',
+    comment: 'Our clients keep the logo coasters and resin pens right on their desks. Smooth communication from quote to delivery.',
     verifiedBuyer: true,
     helpfulCount: 15
   },
 
-  // 3. Wedding & Anniversary Couple Plaque Set
+  // Wedding, Proposal, Anniversary & Owambe Souvenirs
   {
     id: 'rev-wed-1',
     productId: 'couple-spotify-photo-plaque',
     giftSetName: 'Wedding & Couple Memory Photo Plaque Set',
     collection: 'Wedding & Anniversary Sets',
     itemType: 'Photo & Message Plaques',
-    author: 'Tolu & Nkechi Balogun',
+    tags: ['wedding', 'anniversary', 'couple', 'photo', 'plaque', 'spotify', 'proposal'],
+    author: 'Tolu & Nkechi B.',
     location: 'Lekki, Lagos',
     rating: 5,
     date: '4 days ago',
-    occasion: '5th Wedding Anniversary',
-    title: 'Far more heartfelt than buying regular perfumes or shirts',
-    comment: 'My husband surprised me with our traditional wedding photo set inside this clear resin plaque alongside our wedding song title. The matching ring dish holds both our bands every night. Thank you ONE O for making anniversary gifting feel so warm.',
+    occasion: '5th Anniversary',
+    title: 'Sharp photo clarity and clean edges',
+    comment: 'Our traditional wedding photo and song title look crisp under the clear resin coat. Far more meaningful than regular store gifts.',
     verifiedBuyer: true,
     helpfulCount: 31
   },
   {
     id: 'rev-wed-2',
-    productId: 'couple-spotify-photo-plaque',
-    giftSetName: 'Wedding & Couple Memory Photo Plaque Set',
-    collection: 'Romance & Love Sets',
-    itemType: 'Photo & Message Plaques',
-    author: 'Osagie & Kemi Egharevba',
+    productId: 'pkg-proposal-reveal',
+    giftSetName: 'Proposal Reveal Package',
+    collection: 'Wedding & Anniversary Sets',
+    itemType: 'Occasion Gift Packages',
+    tags: ['proposal', 'engagement', 'marry', 'wedding', 'couple', 'vow'],
+    author: 'Osagie E.',
     location: 'Asokoro, Abuja',
     rating: 5,
     date: '10 days ago',
-    occasion: '1st Wedding Anniversary',
-    title: 'Bright, clear photo finish and clean edges',
-    comment: 'The photo under the clear coat stayed vibrant and sharp. Picking our own wedding colors and date wording on WhatsApp was easy and quick. Truly special gift for couples.',
+    occasion: 'Engagement Proposal',
+    title: 'Made the proposal unforgettable',
+    comment: 'The engagement letter and photo plaque were crystal clear with zero bubbles. She immediately framed it on our shelf.',
     verifiedBuyer: true,
-    helpfulCount: 18
+    helpfulCount: 22
   },
-
-  // 4. Owambe & Event Souvenir Packs (Min. 25 Pieces · Customizable Quote)
   {
     id: 'rev-fav-1',
     productId: 'grand-owambe-souvenir-pack-50',
-    giftSetName: 'Owambe VIP Table & In-Law Souvenir Suite (Min. 25 Pieces)',
+    giftSetName: 'Owambe VIP Table & In-Law Souvenir Suite',
     collection: 'Wedding & Anniversary Sets',
     itemType: 'Ready-Made Gift Boxes & Party Favors',
-    author: 'Ronke & Olumide Shodipo',
+    tags: ['owambe', 'souvenir', 'wedding', 'favour', 'bulk', 'vip'],
+    author: 'Ronke & Olumide S.',
     location: 'Victoria Island, Lagos',
     rating: 5,
     date: '2 weeks ago',
-    occasion: 'Owambe Traditional & White Wedding',
-    title: 'Our VIP tables & in-laws loved the resin trays, coasters & thank-you cards',
-    comment: 'Instead of disposable plastic bowls, we requested a custom quote for 40 small resin trinket trays, coasters, and initial keychains matched to our Aso-Ebi colors with a printed Thank-You Card in every bag. Guests kept texting us photos!',
+    occasion: 'Traditional & White Wedding',
+    title: 'VIP guests kept texting photos of their favors',
+    comment: 'Requested a custom quote for 40 trinket trays and coasters matched to our Aso-Ebi colors with thank-you cards. Every bag looked luxe.',
     verifiedBuyer: true,
     helpfulCount: 42
   },
   {
     id: 'rev-fav-2',
     productId: 'wedding-souvenir-pack-25',
-    giftSetName: 'Owambe & Wedding Guest Souvenir Pack (Min. 25 Pieces)',
+    giftSetName: 'Owambe & Wedding Guest Souvenir Pack',
     collection: 'Wedding & Anniversary Sets',
-    itemType: 'Ready-Made Gift Boxes & Party Favors',
-    author: 'Amina & Farouk Bello',
+    itemType: 'Occasion Gift Packages',
+    tags: ['wedding', 'favour', 'souvenir', 'nikkah', 'guest'],
+    author: 'Amina & Farouk B.',
     location: 'Kano & Abuja',
     rating: 5,
     date: '3 weeks ago',
-    occasion: 'Family Dinner & Nikkah VIP Favors',
-    title: 'Clear quote for our exact 35-guest mix of pens, keychains & coasters',
-    comment: 'Loved that we could start from 25 pieces minimum and customize the exact count to 35 for our intimate dinner. Every piece came bagged neatly with a clean Thank-You Card.',
+    occasion: 'Nikkah Dinner Favors',
+    title: 'Easy custom quote for 35 pieces',
+    comment: 'Loved the flexible 25-piece minimum—we customized 35 keychains and coasters with our names and date, all neatly bagged.',
     verifiedBuyer: true,
     helpfulCount: 27
   },
+
+  // Bridal & Groomsmen
   {
-    id: 'rev-fav-3',
-    productId: 'deluxe-owambe-souvenir-pack-100',
-    giftSetName: 'Complete Wedding, Bridesmaids, Groomsmen & Owambe Suite (Min. 25 Pcs)',
-    collection: 'Wedding & Anniversary Sets',
-    itemType: 'Ready-Made Gift Boxes & Party Favors',
-    author: 'Chief (Mrs.) Bukky Adebayo',
-    location: 'Abeokuta, Ogun',
-    rating: 4,
-    date: '1 month ago',
-    occasion: 'Wedding Reception + Bridal & Groomsmen Packs',
-    title: 'Bridal party, groomsmen & 120 guest favors coordinated smoothly',
-    comment: 'Getting a tailored quote that combined bridesmaids packs, groomsmen packs, and 120 coaster and keychain favors with thank-you cards saved us weeks of stress.',
+    id: 'rev-bridal-1',
+    productId: 'bridal-party-luxury-gift-package',
+    giftSetName: 'Bridal Party Appreciation Gift Box',
+    collection: 'Bridal & Groomsmen Packages',
+    itemType: 'Jewelry, Mirrors & Hair Accessories',
+    tags: ['bridal', 'bridesmaid', 'mirror', 'hair', 'jewelry', 'brooch', 'earring', 'bracelet', 'ring'],
+    author: 'Toluwalope A.',
+    location: 'Magodo, Lagos',
+    rating: 5,
+    date: '1 week ago',
+    occasion: 'Bridal Train',
+    title: 'All 6 bridesmaids screamed opening their boxes',
+    comment: 'Each girl’s name was set neatly on her pocket mirror, hair clip, and keychain in our wedding colors. Worth every naira.',
     verifiedBuyer: true,
-    helpfulCount: 19
+    helpfulCount: 38
+  },
+  {
+    id: 'rev-groom-1',
+    productId: 'groomsmen-bespoke-package',
+    giftSetName: 'Groomsmen Gentleman’s Gift Box',
+    collection: 'Bridal & Groomsmen Packages',
+    itemType: 'Cufflinks & Tie Clips',
+    tags: ['groomsmen', 'cufflink', 'tie clip', 'lapel', 'men'],
+    author: 'Femi Oladipo',
+    location: 'Garki, Abuja',
+    rating: 5,
+    date: '2 weeks ago',
+    occasion: 'Wedding Morning',
+    title: 'Sharp monogram finish for the whole squad',
+    comment: 'My groomsmen wore the custom cufflinks and tie clips proudly all day and still use the pocket jotter at work.',
+    verifiedBuyer: true,
+    helpfulCount: 21
   },
 
-  // 5. LED Night Lamp & Song Gift
+  // Baby, Naming & Family
+  {
+    id: 'rev-baby-1',
+    productId: 'pkg-baby-arrival-box',
+    giftSetName: 'Baby Arrival Box',
+    collection: 'Baby, Naming & Family',
+    itemType: 'Occasion Gift Packages',
+    tags: ['baby', 'naming', 'shower', 'christening', 'newborn', 'pastel'],
+    author: 'Oluwafunke D.',
+    location: 'Ikeja GRA, Lagos',
+    rating: 5,
+    date: '5 days ago',
+    occasion: 'Baby Dedication',
+    title: 'Soft pastel colors and delicate gold lettering',
+    comment: 'Gifted this to new parents and they placed the baby name plaque straight in the nursery. Packaging was immaculate.',
+    verifiedBuyer: true,
+    helpfulCount: 23
+  },
+  {
+    id: 'rev-baby-2',
+    productId: 'pkg-naming-ceremony-favour',
+    giftSetName: 'Naming Ceremony Favour Pack',
+    collection: 'Baby, Naming & Family',
+    itemType: 'Occasion Gift Packages',
+    tags: ['naming', 'baby', 'favour', 'charm', 'christening'],
+    author: 'Yusuf & Halima K.',
+    location: 'Kaduna',
+    rating: 5,
+    date: '2 weeks ago',
+    occasion: 'Naming Ceremony',
+    title: 'Guests adored the personalized baby charms',
+    comment: 'Ordered 50 pastel charms with our baby’s name and date tag. Fast turnaround and safe waybill delivery to Kaduna.',
+    verifiedBuyer: true,
+    helpfulCount: 18
+  },
+  {
+    id: 'rev-baby-3',
+    collection: 'Baby, Naming & Family',
+    itemType: 'Baby, Graduation & Memorial Keepsakes',
+    tags: ['baby', 'ultrasound', 'footprint', 'hair', 'keepsake', 'family', 'photo'],
+    author: 'Ibukun & Tayo M.',
+    location: 'Gbagada, Lagos',
+    rating: 5,
+    date: '1 week ago',
+    occasion: 'First Birthday Keepsake',
+    title: 'Preserved our baby milestone crystal clear',
+    comment: 'No bubbles, no yellowing, and super careful handling of the ultrasound scan photo. A keepsake we will treasure forever.',
+    verifiedBuyer: true,
+    helpfulCount: 20
+  },
+
+  // Graduations, Religious & Memorial Keepsakes
+  {
+    id: 'rev-grad-1',
+    collection: 'Graduations & Religious Celebrations',
+    itemType: 'Baby, Graduation & Memorial Keepsakes',
+    tags: ['graduation', 'graduate', 'school', 'cap', 'memorial', 'remembrance', 'candle'],
+    author: 'Chiamaka N.',
+    location: 'Enugu',
+    rating: 5,
+    date: '6 days ago',
+    occasion: 'University Convocation',
+    title: 'Classy keepsake with graduation year & name',
+    comment: 'Matched our faculty colors and added her degree title inside cleanly. Small, thoughtful, and arrived well before convocation day.',
+    verifiedBuyer: true,
+    helpfulCount: 15
+  },
+  {
+    id: 'rev-pastor-1',
+    productId: 'pastor-mentor-appreciation-plaque',
+    giftSetName: 'Mentor & Pastor Appreciation Plaque',
+    collection: 'Appreciation Sets',
+    itemType: 'Photo & Message Plaques',
+    tags: ['pastor', 'mentor', 'scripture', 'appreciation', 'religious', 'church', 'blessing'],
+    author: 'Deaconess Chinyere O.',
+    location: 'New Haven, Enugu',
+    rating: 5,
+    date: '2 weeks ago',
+    occasion: 'Pastor Appreciation',
+    title: 'Carried the exact blessing scripture cleanly',
+    comment: 'Having Numbers 6:24 and our pastor’s name sealed inside the plaque genuinely moved him. Neat edges and sturdy display stand.',
+    verifiedBuyer: true,
+    helpfulCount: 16
+  },
+
+  // LED Night Lamps & Frames
   {
     id: 'rev-lamp-1',
     productId: 'personalized-led-night-lamp-frame',
     giftSetName: 'Illuminated Anniversary & Photo LED Night Lamp',
     collection: 'Romance & Love Sets',
     itemType: 'LED Night Lamps & Frames',
+    tags: ['led', 'lamp', 'night', 'light', 'photo', 'frame', 'romance'],
     author: 'Damilola Adeleke',
     location: 'Bodija, Ibadan',
     rating: 5,
     date: '5 days ago',
-    occasion: 'Partner’s Birthday Surprise',
-    title: 'The warm bedside glow at night melts hearts every evening',
-    comment: 'Sent in our favorite photo and love song via WhatsApp. When she plugged it into her bedside power bank and saw the warm light illuminate our names, she was speechless. Simple USB cord works anywhere.',
+    occasion: 'Partner’s Birthday',
+    title: 'Warm bedside glow works on any power bank',
+    comment: 'Sent our photo and song title on WhatsApp. Plugs right into a USB power bank and lights up our names softly every evening.',
     verifiedBuyer: true,
     helpfulCount: 22
   },
@@ -223,217 +379,244 @@ export const MOCK_REVIEWS: Review[] = [
     giftSetName: 'Illuminated Anniversary & Photo LED Night Lamp',
     collection: 'Birthday Celebrations',
     itemType: 'LED Night Lamps & Frames',
+    tags: ['led', 'lamp', 'frame', 'photo'],
     author: 'Chidinma Eze',
-    location: 'Independence Layout, Enugu',
+    location: 'Enugu',
     rating: 5,
     date: '1 week ago',
-    occasion: 'Sister’s 21st Birthday',
-    title: 'Arrived safely in Enugu with zero scratches',
-    comment: 'Was nervous about courier delivery for a photo lamp, but ONE O wrapped it carefully in thick foam inside a hard gift box. My sister keeps it lit beside her bed every night.',
+    occasion: '21st Birthday',
+    title: 'Packed safely for interstate delivery',
+    comment: 'Arrived in Enugu wrapped in thick foam inside a rigid gift box with zero scratches. My sister keeps it lit every night.',
     verifiedBuyer: true,
     helpfulCount: 16
   },
 
-  // 6. Bridal & Groomsmen Gift Packages
-  {
-    id: 'rev-bridal-1',
-    productId: 'bridal-party-luxury-gift-package',
-    giftSetName: 'Bridal Party & Bridesmaid Appreciation Gift Box',
-    collection: 'Bridal & Groomsmen Packages',
-    itemType: 'Jewelry, Mirrors & Hair Accessories',
-    author: 'Toluwalope A. (Maid of Honor)',
-    location: 'Magodo, Lagos',
-    rating: 5,
-    date: '1 week ago',
-    occasion: 'Bridal Train Appreciation',
-    title: 'All 6 bridesmaids screamed when they opened their boxes!',
-    comment: 'Each girl had her own name on her pocket mirror, hair accessories, and initial keychain—matched to our wedding colors we finalized on WhatsApp. Way better than plain disposable gift bags.',
-    verifiedBuyer: true,
-    helpfulCount: 38
-  },
-  {
-    id: 'rev-groom-1',
-    productId: 'groomsmen-bespoke-package',
-    giftSetName: 'Groomsmen Gentleman’s Appreciation Gift Box',
-    collection: 'Bridal & Groomsmen Packages',
-    itemType: 'Cufflinks & Tie Clips',
-    author: 'Femi Oladipo',
-    location: 'Garki, Abuja',
-    rating: 5,
-    date: '2 weeks ago',
-    occasion: 'Wedding Morning Groomsmen Gifts',
-    title: 'Sharp accessories the guys wore proudly all day',
-    comment: 'My groomsmen wore the custom monogram cufflinks and tie clips with their suits, and they still use the phone stand and pocket jotter at work. Worth every naira.',
-    verifiedBuyer: true,
-    helpfulCount: 21
-  },
-
-  // 7. December Festive Hamper Sets
-  {
-    id: 'rev-festive-1',
-    productId: 'december-sparkle-starter-hamper',
-    giftSetName: 'Sparkle Starter Festive Hamper Package',
-    collection: 'December Festive & Holiday Hampers',
-    itemType: 'Festive Hampers & Holiday Packages',
-    author: 'Ngozi Umeh',
-    location: 'Yaba, Lagos',
-    rating: 5,
-    date: '2 weeks ago',
-    occasion: 'Office Team End-of-Year Thank You',
-    title: 'Way more personal than regular biscuits and wine hampers',
-    comment: 'Ordered 15 Sparkle Starter hampers for our office team with each staff member’s name on their keychain and bookmark. Everyone loved getting something personal they still carry daily.',
-    verifiedBuyer: true,
-    helpfulCount: 25
-  },
-  {
-    id: 'rev-festive-2',
-    productId: 'december-appreciation-classic-hamper',
-    giftSetName: 'Appreciation Classic Festive Hamper Package',
-    collection: 'December Festive & Holiday Hampers',
-    itemType: 'Festive Hampers & Holiday Packages',
-    author: 'Chukwuma Obi',
-    location: 'Wuse, Abuja',
-    rating: 5,
-    date: '1 month ago',
-    occasion: 'Client Holiday Appreciation (20 Boxes)',
-    title: 'Our key clients called just to thank us for the coasters and dish',
-    comment: 'Usually holiday hampers disappear in two days, so clients never remember who sent them. This Appreciation Classic set sits on their desk every morning with our subtle company wish.',
-    verifiedBuyer: true,
-    helpfulCount: 28
-  },
-  {
-    id: 'rev-festive-3',
-    productId: 'december-executive-luxe-hamper',
-    giftSetName: 'Executive Luxe VIP Festive Hamper Package',
-    collection: 'December Festive & Holiday Hampers',
-    itemType: 'Festive Hampers & Holiday Packages',
-    author: 'Yinka Adebiyi',
-    location: 'Victoria Island, Lagos',
-    rating: 5,
-    date: '1 month ago',
-    occasion: 'Managing Director & Board Gifting',
-    title: 'Picked the desk clock centerpiece and they loved it',
-    comment: 'Sorted out all our board members’ custom colors and names on WhatsApp in ten minutes. Every box arrived tied with ribbon and our appreciation cards handwritten cleanly inside.',
-    verifiedBuyer: true,
-    helpfulCount: 20
-  },
-
-  // 8. Retirement & Clock Suites
+  // Clocks & Retirement Suites
   {
     id: 'rev-clock-1',
     productId: 'executive-desk-clock-suite',
     giftSetName: 'Handmade Personalized Desk Clock',
     collection: 'Corporate & Office Collections',
     itemType: 'Desk & Wall Clocks',
+    tags: ['clock', 'desk', 'wall', 'retirement', 'silent'],
     author: 'Pastor Emmanuel E.',
     location: 'Ikeja, Lagos',
     rating: 5,
     date: '3 weeks ago',
-    occasion: 'Appreciation Gift for Church Elder',
-    title: 'Quiet sweep clock hands with zero ticking sound',
-    comment: 'We gave this to an elder in our ministry. The clock runs silently in his quiet study, and choosing his favorite colors with the team on WhatsApp made it feel genuinely tailored.',
+    occasion: 'Elder Appreciation',
+    title: 'Silent sweep movement with glossy marble pour',
+    comment: 'Zero ticking noise in his study and the gold numerals are easy to read. Customizing the swirl color on WhatsApp took two minutes.',
     verifiedBuyer: true,
     helpfulCount: 14
   },
   {
     id: 'rev-retire-1',
     productId: 'distinguished-retirement-milestone-clock-suite',
-    giftSetName: 'Honorary Retirement Clock & Desk Nameplate Suite',
+    giftSetName: 'Honorary Retirement Clock & Nameplate Suite',
     collection: 'Retirement Sets',
     itemType: 'Desk & Wall Clocks',
+    tags: ['retirement', 'clock', 'farewell', 'principal', 'director'],
     author: 'Mrs. Funmi Alabi',
     location: 'Akure, Ondo',
     rating: 5,
     date: '2 weeks ago',
-    occasion: '35 Years Civil Service Retirement',
-    title: 'Honored our retiring principal properly',
-    comment: 'Pairing the desk clock with her official nameplate made her whole family emotional at her send-off dinner. It now sits right in the center of her living room shelf.',
+    occasion: '35-Year Retirement',
+    title: 'Honored our retiring principal beautifully',
+    comment: 'Pairing the clock with her official nameplate made her whole family emotional at her send-off dinner. Now sits in her parlor.',
+    verifiedBuyer: true,
+    helpfulCount: 17
+  },
+
+  // Kitchen Boards, Trays, Coasters, Home Décor & Flower Preservation
+  {
+    id: 'rev-kitchen-1',
+    productId: 'pinterest-emerald-waterfall-kitchen-board',
+    giftSetName: 'Waterfall Kitchen Serving Board',
+    collection: 'Pinterest Kitchen & Dining Collections',
+    itemType: 'Kitchen Charcuterie Boards & Island Platters',
+    tags: ['kitchen', 'charcuterie', 'serving', 'board', 'platter', 'housewarming', 'wood'],
+    author: 'Oluwaseun & Dami M.',
+    location: 'Chevron, Lekki',
+    rating: 5,
+    date: '1 week ago',
+    occasion: 'Housewarming Gift',
+    title: 'Showstopper serving board for Sunday hosting',
+    comment: 'Food-safe glossy finish with the couple’s surname cleanly added. Everyone at their housewarming asked where we ordered it.',
+    verifiedBuyer: true,
+    helpfulCount: 23
+  },
+  {
+    id: 'rev-tray-1',
+    collection: 'Pinterest Kitchen & Dining Collections',
+    itemType: 'Ring Dishes & Catch-All Trays',
+    tags: ['tray', 'vanity', 'jewellery', 'jewelry', 'perfume', 'dish', 'catch all', 'key dish'],
+    author: 'Moyo Balogun',
+    location: 'Victoria Island, Lagos',
+    rating: 5,
+    date: '4 days ago',
+    occasion: 'New Apartment Gift',
+    title: 'Heavy, glossy finish that elevates my dresser',
+    comment: 'Holds my daily perfumes and rings neatly without scratching. The gold-trimmed rim looks far more expensive than the price.',
+    verifiedBuyer: true,
+    helpfulCount: 19
+  },
+  {
+    id: 'rev-coaster-1',
+    collection: 'Pinterest Kitchen & Dining Collections',
+    itemType: 'Coaster Sets & Bottle Stoppers',
+    tags: ['coaster', 'bottle stopper', 'drink', 'table', 'home'],
+    author: 'Kelechi O.',
+    location: 'GRA, Port Harcourt',
+    rating: 5,
+    date: '9 days ago',
+    occasion: 'Housewarming',
+    title: 'Handles hot tea mugs with zero marks',
+    comment: 'Ordered a set of 6 in emerald and gold flakes with our family initials. Solid thickness and wipes clean in seconds.',
     verifiedBuyer: true,
     helpfulCount: 17
   },
   {
-    id: 'rev-retire-2',
-    productId: 'executive-retirement-farewell-box',
-    giftSetName: 'Executive Retirement Celebration & Farewell Dinner Gift Box',
-    collection: 'Retirement Sets',
-    itemType: 'Ready-Made Gift Boxes & Party Favors',
-    author: 'Dr. Biodun & Directors Committee',
+    id: 'rev-home-1',
+    collection: 'Wedding & Anniversary Sets',
+    itemType: 'Home Signs, Vases & Wall Art',
+    tags: ['home', 'sign', 'door', 'house number', 'vase', 'wall art', 'candle', 'room sign'],
+    author: 'Dapo & Lola A.',
+    location: 'Abuja',
+    rating: 5,
+    date: '2 weeks ago',
+    occasion: 'New Home Move-In',
+    title: 'Sharp door sign that stands out immediately',
+    comment: 'Our family surname and house number look crisp from the gate. Solid finish and arrived with clean mounting backing.',
+    verifiedBuyer: true,
+    helpfulCount: 14
+  },
+  {
+    id: 'rev-flower-1',
+    collection: 'Wedding & Anniversary Sets',
+    itemType: 'Flower Preservation & Pyramids',
+    tags: ['flower', 'bouquet', 'pyramid', 'dried', 'pressed', 'preservation', 'block'],
+    author: 'Temi O.',
     location: 'Ikoyi, Lagos',
     rating: 5,
-    date: '1 week ago',
-    occasion: 'Executive Director Farewell Dinner',
-    title: 'Meaningful pieces made for her life at home after retirement',
-    comment: 'Instead of generic office pens, we requested a custom quote combining the parlor clock, lifetime service frame, home valet tray, memoir notebook, parlor coasters, and jewelry mirror set for our outgoing female MD. She was deeply touched.',
+    date: '3 weeks ago',
+    occasion: 'Bridal Bouquet Preservation',
+    title: 'My wedding petals look frozen in glass',
+    comment: 'Sent my wedding roses in and got back a crystal-clear block with zero yellowing. Best post-wedding keepsake I own.',
     verifiedBuyer: true,
-    helpfulCount: 24
+    helpfulCount: 25
   },
 
-  // 9. Kitchen Serving Board Suite
-  {
-    id: 'rev-kitchen-1',
-    productId: 'pinterest-emerald-waterfall-kitchen-board',
-    giftSetName: 'Waterfall Kitchen Serving / Charcuterie Board',
-    collection: 'Pinterest Kitchen & Dining Collections',
-    itemType: 'Kitchen Charcuterie Boards & Island Platters',
-    author: 'Oluwaseun & Dami Martins',
-    location: 'Chevron, Lekki',
-    rating: 5,
-    date: '1 week ago',
-    occasion: 'Housewarming Gift for Newlyweds',
-    title: 'Everyone at our Sunday hangout asked about the serving board',
-    comment: 'Used it to serve suya skewers and fruit for friends moving into their new home. Having the family surname added cleanly onto the board made it feel made just for their kitchen.',
-    verifiedBuyer: true,
-    helpfulCount: 23
-  },
-
-  // 10. Notebooks & Mentor Appreciation Sets
+  // Stationery, Journals, Pens, Bookmarks, Phone Stands & Ornaments
   {
     id: 'rev-journal-1',
     productId: 'personalized-resin-journal-pen-set',
     giftSetName: 'A5 Hardcover Notebook & Matching Pen Set',
     collection: 'Appreciation Sets',
     itemType: 'Journals & Resin Pens',
+    tags: ['journal', 'notebook', 'jotter', 'pen', 'stationery'],
     author: 'Titi Ogunleye',
     location: 'Surulere, Lagos',
     rating: 5,
     date: '6 days ago',
-    occasion: 'Pastor’s Wife Birthday',
-    title: 'Refillable hardcover notebook she carries to every service',
-    comment: 'Because the pages refill easily, I know she will keep this cover for years. Picked purple tones and silver sparkles on WhatsApp and it came out neat and bright.',
+    occasion: 'Mentor Birthday',
+    title: 'Refillable cover and smooth-writing pen',
+    comment: 'She carries this notebook to every meeting and loves that the pages refill easily. Purple and silver sparkles came out neat.',
     verifiedBuyer: true,
     helpfulCount: 18
   },
   {
-    id: 'rev-pastor-1',
-    productId: 'pastor-mentor-appreciation-plaque',
-    giftSetName: 'Mentor & Pastor Appreciation Plaque & Desk Tray',
-    collection: 'Appreciation Sets',
-    itemType: 'Photo & Message Plaques',
-    author: 'Deaconess Chinyere Okafor',
-    location: 'New Haven, Enugu',
+    id: 'rev-desk-token-1',
+    collection: 'Under ₦10,000 Everyday Boutique',
+    itemType: 'Bookmarks, Pens & Desk Tokens',
+    tags: ['bookmark', 'pen', 'paperweight', 'card holder', 'page holder', 'bookend', 'organizer'],
+    author: 'Khadijah Sani',
+    location: 'Wuse 2, Abuja',
+    rating: 5,
+    date: '1 week ago',
+    occasion: 'Colleague Thank-You',
+    title: 'Affordable gift that still feels luxury',
+    comment: 'Ordered custom name bookmarks and pens under ₦10,000—arrived neatly ribboned with zero rough edges.',
+    verifiedBuyer: true,
+    helpfulCount: 24
+  },
+  {
+    id: 'rev-stand-1',
+    collection: 'Corporate & Office Collections',
+    itemType: 'Phone Stands & Holders',
+    tags: ['phone', 'stand', 'holder', 'grip', 'remote', 'desk'],
+    author: 'Segun Adewale',
+    location: 'Yaba, Lagos',
+    rating: 5,
+    date: '8 days ago',
+    occasion: 'Work Desk Upgrade',
+    title: 'Sturdy angle for video calls and charging',
+    comment: 'Holds my phone steadily during Zoom calls without slipping, and my initials inside the emerald swirl look sharp.',
+    verifiedBuyer: true,
+    helpfulCount: 13
+  },
+  {
+    id: 'rev-magnet-1',
+    collection: 'Under ₦10,000 Everyday Boutique',
+    itemType: 'Christmas Ornaments & Fridge Magnets',
+    tags: ['magnet', 'fridge', 'ornament', 'christmas', 'tag', 'luggage'],
+    author: 'Amaka U.',
+    location: 'Festac, Lagos',
     rating: 5,
     date: '2 weeks ago',
-    occasion: 'Pastor Appreciation Sunday',
-    title: 'Carried the exact blessing scripture we wanted',
-    comment: 'A simple text felt too small for a pastor who prayed with our family all year. Having Numbers 6:24 and his name set inside the plaque truly touched his heart.',
+    occasion: 'Family Keepsake',
+    title: 'Strong magnet hold and vibrant photo print',
+    comment: 'Ordered photo fridge magnets for our family reunion. Colors stayed vivid and they grip the fridge door tightly.',
     verifiedBuyer: true,
-    helpfulCount: 16
+    helpfulCount: 12
   },
 
-  // 11. Guitar Straps & Music Gifts
+  // Wearables, Keychains, Jewelry & Guitar Straps
+  {
+    id: 'rev-key-1',
+    productId: 'resin-alphabet-keychain-gold',
+    giftSetName: 'Custom Initial Letter Keychain (A–Z)',
+    collection: 'Under ₦10,000 Everyday Boutique',
+    itemType: 'Letter Keychains & Lapel Pins',
+    tags: ['keychain', 'initial', 'letter', 'charm', 'lanyard', 'badge', 'pin', 'hijab', 'brooch'],
+    author: 'Zainab Aliyu',
+    location: 'Kaduna',
+    rating: 5,
+    date: '5 days ago',
+    occasion: 'Friend Surprise',
+    title: 'Daily-use gift that feels genuinely personal',
+    comment: 'Ordered 4 different letters with gold flakes for close friends. Thick glossy cast and strong keyring clasp.',
+    verifiedBuyer: true,
+    helpfulCount: 29
+  },
+  {
+    id: 'rev-wear-1',
+    collection: 'Under ₦10,000 Everyday Boutique',
+    itemType: 'Jewelry, Mirrors & Hair Accessories',
+    tags: ['necklace', 'pendant', 'earring', 'bracelet', 'ring', 'hair clip', 'scrunchie', 'hijab', 'watch'],
+    author: 'Halima Bello',
+    location: 'Wuse, Abuja',
+    rating: 4,
+    date: '12 days ago',
+    occasion: 'Self-Treat & Sister Gift',
+    title: 'Lightweight to wear and super shiny',
+    comment: 'The resin pendant and matching studs are light on the ears with a glass-like shine. Came in a cute pouch ready for gifting.',
+    verifiedBuyer: true,
+    helpfulCount: 15
+  },
   {
     id: 'rev-strap-1',
     productId: 'bespoke-resin-accent-guitar-strap',
     giftSetName: 'Handmade Personalized Resin Accent Guitar Strap',
     collection: 'Birthday Celebrations',
     itemType: 'Personalized Guitar Straps & Music Gifts',
-    author: 'Tomiwa D. (Lead Guitarist)',
+    tags: ['guitar', 'strap', 'music', 'musician', 'pick'],
+    author: 'Tomiwa D.',
     location: 'Surulere, Lagos',
     rating: 5,
     date: '4 days ago',
-    occasion: '30th Birthday Gift from Bandmates',
-    title: 'Soft shoulder padding and stage name sealed cleanly inside',
-    comment: 'My band ordered this for my birthday before tour. Seeing my stage name sealed in shiny clear resin with a matching pick inside the slot blew me away—comfortable even during 3-hour church and festival sets.',
+    occasion: '30th Birthday',
+    title: 'Comfy padding and crisp stage-name crest',
+    comment: 'My stage name is sealed clearly in glossy resin with a matching pick in the slot—comfortable even through 3-hour live sets.',
     verifiedBuyer: true,
     helpfulCount: 35
   },
@@ -443,112 +626,131 @@ export const MOCK_REVIEWS: Review[] = [
     giftSetName: 'Handmade Personalized Resin Accent Guitar Strap',
     collection: 'Appreciation Sets',
     itemType: 'Personalized Guitar Straps & Music Gifts',
-    author: 'Minister Joshua Adeleke',
+    tags: ['guitar', 'strap', 'music'],
+    author: 'Min. Joshua A.',
     location: 'Gwarinpa, Abuja',
     rating: 5,
     date: '1 week ago',
-    occasion: 'Music Director Appreciation',
-    title: 'Touched our worship guitarist right after Sunday rehearsal',
-    comment: 'We customized it with his initials and chosen colors via WhatsApp. Arrived safely to Abuja with the gift box and handwritten choir card.',
+    occasion: 'Music Director Gift',
+    title: 'Touched our guitarist right after rehearsal',
+    comment: 'Customized his initials and colors on WhatsApp—arrived safely in Abuja boxed with our choir thank-you note.',
     verifiedBuyer: true,
     helpfulCount: 26
   },
 
-  // 12. Everyday Tokens & General Reviews
+  // Festive Hampers
   {
-    id: 'rev-key-1',
-    productId: 'resin-alphabet-keychain-gold',
-    giftSetName: 'Custom Initial Letter Keychain (A–Z)',
-    collection: 'Under ₦10,000 Everyday Boutique',
-    itemType: 'Letter Keychains & Lapel Pins',
-    author: 'Zainab Aliyu',
-    location: 'Kaduna',
+    id: 'rev-festive-1',
+    productId: 'december-sparkle-starter-hamper',
+    giftSetName: 'Sparkle Starter Festive Hamper Package',
+    collection: 'December Festive & Holiday Hampers',
+    itemType: 'Festive Hampers & Holiday Packages',
+    tags: ['hamper', 'festive', 'december', 'holiday', 'christmas', 'office'],
+    author: 'Ngozi Umeh',
+    location: 'Yaba, Lagos',
     rating: 5,
-    date: '5 days ago',
-    occasion: 'Sweet "Thinking of You" Surprise',
-    title: 'Affordable little gift that still feels genuinely personal',
-    comment: 'Ordered 4 different letters for close friends at ₦4,000 each and let ONE O customize the colors we chose on WhatsApp. Everyone keeps theirs on their car keys daily.',
+    date: '2 weeks ago',
+    occasion: 'Team End-of-Year Gift',
+    title: 'More personal than regular food hampers',
+    comment: 'Ordered 15 boxes with each staff member’s name on their keychain and bookmark. Everyone still carries theirs daily.',
     verifiedBuyer: true,
-    helpfulCount: 29
+    helpfulCount: 25
   },
   {
-    id: 'rev-gen-2',
-    collection: 'Birthday Celebrations',
-    author: 'Khadijah Sani',
-    location: 'Wuse 2, Abuja',
+    id: 'rev-festive-2',
+    productId: 'december-appreciation-classic-hamper',
+    giftSetName: 'Appreciation Classic Festive Hamper Package',
+    collection: 'December Festive & Holiday Hampers',
+    itemType: 'Festive Hampers & Holiday Packages',
+    tags: ['hamper', 'festive', 'client', 'executive'],
+    author: 'Chukwuma Obi',
+    location: 'Wuse, Abuja',
     rating: 5,
-    date: '3 weeks ago',
-    occasion: '30th Birthday Gift Box',
-    title: 'Honest Nigerian prices for handmade personalized pieces',
-    comment: 'From ₦3,000 bookmarks up to complete gift boxes, everything arrives neatly wrapped with a handwritten card so you can hand it over immediately with confidence.',
+    date: '1 month ago',
+    occasion: 'Client Holiday Gifting',
+    title: 'Clients called specifically to say thank you',
+    comment: 'Unlike consumables that vanish in two days, these personalized coasters and trays stay on our clients’ desks year-round.',
     verifiedBuyer: true,
-    helpfulCount: 33
+    helpfulCount: 28
   },
+
+  // General High-Trust Feedback
   {
     id: 'rev-gen-3',
     collection: 'Romance & Love Sets',
+    tags: ['gift', 'ribbon', 'card', 'love'],
     author: 'Kayode & Simi',
     location: 'Ajah, Lagos',
     rating: 4,
     date: '2 weeks ago',
-    occasion: 'Spontaneous "Just Because" Love Gift',
-    title: 'Handwritten note card and neat ribbon wrapping won her over',
-    comment: 'The presentation was lovely from the satin ribbon to the card message inside. Looks even warmer in person than in photos.',
+    occasion: 'Just Because Gift',
+    title: 'Looks even warmer in person than in photos',
+    comment: 'Clean satin ribbon wrapping, neat card handwriting, and friendly updates on WhatsApp before dispatch.',
     verifiedBuyer: true,
     helpfulCount: 17
   }
 ]
 
+function hashProductSeed(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+  }
+  return hash
+}
+
 /**
- * Returns reviews matching a specific product/gift set first, then falls back to related collection/itemType/general reviews
+ * Returns the most relevant reviews for a specific product by matching
+ * productId, itemType, collection, and title keywords so every catalogue item
+ * displays context-appropriate ratings and short buyer feedback.
  */
 export function getProductReviews(
   productId?: string,
   collection?: string,
-  itemType?: string
+  itemType?: string,
+  productTitle?: string
 ): Review[] {
-  if (!productId) return MOCK_REVIEWS.slice(0, 6)
+  if (!productId) return MOCK_REVIEWS.slice(0, 5)
 
-  // 1. Direct match for this exact gift set / item
-  const exactMatches = MOCK_REVIEWS.filter((r) => r.productId === productId)
+  const titleWords = (productTitle || '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3)
 
-  // 2. Collection or ItemType matches
-  const relatedMatches = MOCK_REVIEWS.filter(
-    (r) =>
-      r.productId !== productId &&
-      ((collection && r.collection === collection) ||
-        (itemType && r.itemType === itemType))
-  )
+  const seed = hashProductSeed(productId)
 
-  // 3. Fallbacks from wider happy customers
-  const generalMatches = MOCK_REVIEWS.filter(
-    (r) => r.productId !== productId && !exactMatches.some((m) => m.id === r.id)
-  )
+  const scored = MOCK_REVIEWS.map((review, index) => {
+    let score = 0
+    if (review.productId === productId) score += 100
+    if (itemType && review.itemType === itemType) score += 35
+    if (collection && review.collection === collection) score += 20
 
-  const combined = [...exactMatches, ...relatedMatches, ...generalMatches]
-
-  const seen = new Set<string>()
-  const result: Review[] = []
-  for (const review of combined) {
-    if (!seen.has(review.id)) {
-      seen.add(review.id)
-      result.push(review)
+    if (titleWords.length > 0 && review.tags?.length) {
+      const tagMatches = review.tags.filter((tag) =>
+        titleWords.some((w) => tag.includes(w) || w.includes(tag))
+      ).length
+      score += Math.min(tagMatches * 10, 30)
     }
-  }
 
-  return result.slice(0, 6)
+    // Deterministic tie-breaker so distinct items surface varied top feedback
+    const tieBreaker = ((index + seed) % MOCK_REVIEWS.length) / 1000
+    return { review, score: score + tieBreaker }
+  })
+
+  scored.sort((a, b) => b.score - a.score)
+  return scored.slice(0, 5).map((entry) => entry.review)
 }
 
 /**
- * Computes real average rating, 5-to-1 star distribution counts, and recommendation rate
+ * Computes average rating, 5-to-1 star distribution counts, and recommendation rate
  */
-export function calculateReviewStats(reviews: Review[]) {
+export function calculateReviewStats(reviews: Review[]): ReviewStats {
   if (!reviews || reviews.length === 0) {
     return {
       average: 5.0,
       totalCount: 0,
       recommendedPercent: 100,
-      starCounts: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as Record<number, number>
+      starCounts: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
     }
   }
 

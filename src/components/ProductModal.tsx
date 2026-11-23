@@ -8,12 +8,7 @@ import {
   Heart,
   ShieldCheck,
   Music,
-  Star,
-  ThumbsUp,
-  MessageSquarePlus,
   Sparkles,
-  MapPin,
-  Calendar,
   Layers,
   Type,
   Palette,
@@ -34,6 +29,12 @@ import {
   getProductReviews,
   calculateReviewStats
 } from '../data/reviews'
+import {
+  ProductReviews,
+  ProductReviewsCompact,
+  StarRating
+} from './ProductReviews'
+import { ShippingEstimator } from './ShippingEstimator'
 import {
   GUITAR_STRAP_COLORS,
   GUITAR_STRAP_THEMES,
@@ -240,20 +241,14 @@ const ProductModalContent: React.FC<ProductModalContentProps> = ({
   const [includeMatchingPick, setIncludeMatchingPick] = useState(true)
 
   // Reviews state
-  const [reviewsList, setReviewsList] = useState<Review[]>([])
-  const [starFilter, setStarFilter] = useState<'all' | 5 | 4 | 3>('all')
-  const [helpfulMap, setHelpfulMap] = useState<Record<string, number>>({})
-  const [userVoted, setUserVoted] = useState<Record<string, boolean>>({})
-
-  // New review form
-  const [showAddReview, setShowAddReview] = useState(false)
-  const [newRating, setNewRating] = useState(5)
-  const [newName, setNewName] = useState('')
-  const [newLocation, setNewLocation] = useState('')
-  const [newOccasion, setNewOccasion] = useState('')
-  const [newTitle, setNewTitle] = useState('')
-  const [newComment, setNewComment] = useState('')
-  const [reviewSubmitted, setReviewSubmitted] = useState(false)
+  const [reviewsList, setReviewsList] = useState<Review[]>(() =>
+    getProductReviews(
+      product.id,
+      product.collection,
+      product.itemType,
+      product.title
+    )
+  )
 
   const companionSuggestions = getCompanionSuggestions(product)
 
@@ -262,17 +257,10 @@ const ProductModalContent: React.FC<ProductModalContentProps> = ({
       const initialReviews = getProductReviews(
         product.id,
         product.collection,
-        product.itemType
+        product.itemType,
+        product.title
       )
       setReviewsList(initialReviews)
-      setStarFilter('all')
-      const initialCounts: Record<string, number> = {}
-      initialReviews.forEach((r) => {
-        initialCounts[r.id] = r.helpfulCount
-      })
-      setHelpfulMap(initialCounts)
-      setShowAddReview(false)
-      setReviewSubmitted(false)
       setActiveTab('details')
       setSelectedCompanionIds([])
       setHasPickedCustomStyle(false)
@@ -281,10 +269,10 @@ const ProductModalContent: React.FC<ProductModalContentProps> = ({
   }, [product])
 
   const stats = calculateReviewStats(reviewsList)
-  const filteredReviews =
-    starFilter === 'all'
-      ? reviewsList
-      : reviewsList.filter((r) => Math.round(r.rating) === starFilter)
+
+  const handleAddReview = (newReview: Review) => {
+    setReviewsList((prev) => [newReview, ...prev])
+  }
 
   const toggleCompanion = (id: string) => {
     setSelectedCompanionIds((prev) =>
@@ -342,52 +330,6 @@ const ProductModalContent: React.FC<ProductModalContentProps> = ({
   const activeColorGroup =
     GUITAR_STRAP_COLORS.find((c) => c.category === strapColorCategory) ||
     GUITAR_STRAP_COLORS[0]
-
-  const handleHelpfulClick = (reviewId: string) => {
-    if (userVoted[reviewId]) return
-    setHelpfulMap((prev) => ({
-      ...prev,
-      [reviewId]: (prev[reviewId] || 0) + 1
-    }))
-    setUserVoted((prev) => ({
-      ...prev,
-      [reviewId]: true
-    }))
-  }
-
-  const handleAddReviewSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newName.trim() || !newComment.trim()) return
-
-    const newReview: Review = {
-      id: `rev-${Date.now()}`,
-      productId: product.id,
-      giftSetName: product.title,
-      author: newName.trim(),
-      verifiedBuyer: true,
-      rating: newRating,
-      title: newTitle.trim() || 'Thoughtful Handmade Finish',
-      location: newLocation.trim() || 'Lagos, Nigeria',
-      occasion: newOccasion.trim() || 'Special Celebration',
-      comment: newComment.trim(),
-      date: 'Just now',
-      helpfulCount: 0
-    }
-
-    setReviewsList((prev) => [newReview, ...prev])
-    setStarFilter('all')
-    setReviewSubmitted(true)
-    setTimeout(() => {
-      setShowAddReview(false)
-      setReviewSubmitted(false)
-      setNewName('')
-      setNewTitle('')
-      setNewLocation('')
-      setNewOccasion('')
-      setNewComment('')
-      setNewRating(5)
-    }, 1500)
-  }
 
   const handleAdd = () => {
     let finalRecipient: string | undefined
@@ -563,6 +505,12 @@ const ProductModalContent: React.FC<ProductModalContentProps> = ({
                   <span>{product.packaging}</span>
                 </div>
 
+                {/* Regional Nigeria Delivery Estimator */}
+                <ShippingEstimator
+                  isBulkOrQuote={Boolean(product.isCustomQuote)}
+                  minOrderQty={product.minOrderQty}
+                />
+
                 {/* For Guitar Straps: Highlight Personalization Badge */}
                 {isStrap && (
                   <div className="mt-4 p-3.5 bg-white border border-[#D5E3D8] space-y-1.5">
@@ -577,37 +525,12 @@ const ProductModalContent: React.FC<ProductModalContentProps> = ({
                 )}
               </div>
 
-              {/* Social Proof Mini Quote */}
-              <div className="mt-6 pt-5 border-t border-[#DDD8CE]">
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-0.5 text-[#C2A264]">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-3.5 h-3.5 ${
-                          i < Math.round(reviewsList[0]?.rating || 5)
-                            ? 'fill-[#C2A264] text-[#C2A264]'
-                            : 'text-[#C7C3BD]'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  {reviewsList[0]?.giftSetName && (
-                    <span className="text-xs font-semibold text-[#1B3326] truncate max-w-[180px]">
-                      {reviewsList[0].giftSetName}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs sm:text-sm text-[#38342F] leading-relaxed">
-                  "{reviewsList[0]?.comment.slice(0, 125) ||
-                    'Neat and thoughtful handmade gift, clear finish and wrapped ready to hand over.'}
-                  ..."
-                </p>
-                <p className="text-xs text-[#4A4640] font-semibold mt-1.5">
-                  — {reviewsList[0]?.author || 'Verified Buyer'} ·{' '}
-                  {reviewsList[0]?.location || 'Lagos, Nigeria'}
-                </p>
-              </div>
+              {/* Compact Product Ratings & Short Customer Feedback */}
+              <ProductReviewsCompact
+                reviews={reviewsList}
+                stats={stats}
+                onViewAll={() => setActiveTab('reviews')}
+              />
             </div>
 
             {/* Right Column (7 Cols): Tabs + Interactive Content */}
@@ -665,19 +588,8 @@ const ProductModalContent: React.FC<ProductModalContentProps> = ({
                       onClick={() => setActiveTab('reviews')}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F8F6] border border-[#D5E3D8] hover:bg-[#EBF2ED] transition-colors text-left"
                     >
-                      <div className="flex items-center text-[#C2A264]">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-3.5 h-3.5 ${
-                              i < Math.round(stats.average)
-                                ? 'fill-[#C2A264] text-[#C2A264]'
-                                : 'text-[#C7C3BD]'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs font-bold text-[#191817]">
+                      <StarRating rating={stats.average} size="sm" />
+                      <span className="text-xs font-bold text-[#191817] tabular-nums">
                         {stats.average.toFixed(1)}
                       </span>
                       <span className="text-xs text-[#1B3326] underline font-medium">
@@ -1437,76 +1349,6 @@ const ProductModalContent: React.FC<ProductModalContentProps> = ({
                         </p>
                       </div>
                     </div>
-
-                    {/* Inline Star Rating & Featured Gift Set Testimonials Preview */}
-                    <div className="pt-4 border-t border-[#E8E6E1] space-y-3">
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center text-[#C2A264]">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-4 h-4 ${
-                                  i < Math.round(stats.average)
-                                    ? 'fill-[#C2A264] text-[#C2A264]'
-                                    : 'text-[#C7C3BD]'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-sm font-bold text-[#191817]">
-                            {stats.average.toFixed(1)} out of 5
-                          </span>
-                          <span className="text-xs text-[#4A4640]">
-                            ({reviewsList.length} verified reviews)
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('reviews')}
-                          className="text-xs font-bold uppercase tracking-wider text-[#1B3326] hover:underline"
-                        >
-                          See All Reviews &amp; Rate &rarr;
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {reviewsList.slice(0, 2).map((rev) => (
-                          <div
-                            key={rev.id}
-                            className="p-3 bg-[#FAF9F5] border border-[#E2DDD3] space-y-1.5"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center text-[#C2A264]">
-                                {[...Array(5)].map((_, idx) => (
-                                  <Star
-                                    key={idx}
-                                    className={`w-3 h-3 ${
-                                      idx < Math.round(rev.rating)
-                                        ? 'fill-[#C2A264] text-[#C2A264]'
-                                        : 'text-[#C7C3BD]'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                              <span className="text-xs text-[#4A4640]">
-                                {rev.location}
-                              </span>
-                            </div>
-                            <p className="text-xs font-bold text-[#191817] leading-snug">
-                              "{rev.title}"
-                            </p>
-                            <p className="text-xs text-[#38342F] leading-relaxed line-clamp-2">
-                              {rev.comment}
-                            </p>
-                            <p className="text-xs font-semibold text-[#1B3326]">
-                              — {rev.author} ({rev.occasion})
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 )}
 
@@ -1908,336 +1750,13 @@ const ProductModalContent: React.FC<ProductModalContentProps> = ({
 
                 {/* TAB 4: VERIFIED REVIEWS & STAR RATINGS */}
                 {activeTab === 'reviews' && (
-                  <div className="space-y-4 animate-in fade-in duration-200">
-                    {/* Rating Overview + 5-to-1 Star Breakdown Card */}
-                    <div className="p-4 sm:p-5 bg-[#F8FAF9] border border-[#D5E3D8] space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
-                        {/* Left: Overall Star Score */}
-                        <div className="sm:col-span-5 space-y-1">
-                          <div className="flex items-baseline gap-2">
-                            <span className="font-serif text-4xl font-bold text-[#1B3326]">
-                              {stats.average.toFixed(1)}
-                            </span>
-                            <span className="text-xs text-[#4A4640] font-semibold">
-                              out of 5.0
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-[#C2A264]">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-4 h-4 ${
-                                  i < Math.round(stats.average)
-                                    ? 'fill-[#C2A264] text-[#C2A264]'
-                                    : 'text-[#C7C3BD]'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <p className="text-xs text-[#38342F] font-medium pt-0.5">
-                            {stats.totalCount} verified customer reviews · {stats.recommendedPercent}% recommend
-                          </p>
-                        </div>
-
-                        {/* Right: 5★ to 1★ Breakdown Bars */}
-                        <div className="sm:col-span-7 sm:border-l sm:border-[#D5E3D8] sm:pl-4 space-y-1.5">
-                          {[5, 4, 3, 2, 1].map((starLevel) => {
-                            const count = stats.starCounts[starLevel] || 0
-                            const pct =
-                              stats.totalCount > 0
-                                ? Math.round((count / stats.totalCount) * 100)
-                                : 0
-                            return (
-                              <div key={starLevel} className="flex items-center gap-2 text-xs">
-                                <span className="w-9 font-semibold text-[#191817] shrink-0">
-                                  {starLevel} ★
-                                </span>
-                                <div className="flex-1 h-2 bg-[#E5EAE6] overflow-hidden">
-                                  <div
-                                    className="h-full bg-[#C2A264] transition-all duration-300"
-                                    style={{ width: `${pct}%` }}
-                                  />
-                                </div>
-                                <span className="w-7 text-right text-[#4A4640] tabular-nums shrink-0">
-                                  {count}
-                                </span>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Community Assurance Highlights */}
-                      <div className="pt-3 border-t border-[#E0DDD7] grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-[#38342F]">
-                        <span className="flex items-center gap-1.5">
-                          <ShieldCheck className="w-3.5 h-3.5 text-[#1B3326] shrink-0" />
-                          <span>Clear Shiny Resin (Never turns yellow)</span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <ShieldCheck className="w-3.5 h-3.5 text-[#1B3326] shrink-0" />
-                          <span>Gift Box with Ribbon &amp; Card</span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <ShieldCheck className="w-3.5 h-3.5 text-[#1B3326] shrink-0" />
-                          <span>Safe Doorstep Delivery Across Nigeria</span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <ShieldCheck className="w-3.5 h-3.5 text-[#1B3326] shrink-0" />
-                          <span>We Show You Photos on WhatsApp First</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Filter & Action Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#191817] mr-1">
-                          Filter:
-                        </span>
-                        {(
-                          [
-                            { id: 'all', label: `All (${reviewsList.length})` },
-                            { id: 5, label: `5★ (${stats.starCounts[5] || 0})` },
-                            { id: 4, label: `4★ (${stats.starCounts[4] || 0})` }
-                          ] as const
-                        ).map((f) => (
-                          <button
-                            key={String(f.id)}
-                            type="button"
-                            onClick={() => setStarFilter(f.id)}
-                            className={`px-2.5 py-1 text-xs font-semibold border transition-colors ${
-                              starFilter === f.id
-                                ? 'bg-[#1B3326] text-white border-[#1B3326]'
-                                : 'bg-white text-[#38342F] border-[#DDD8CE] hover:border-[#1B3326]'
-                            }`}
-                          >
-                            {f.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowAddReview(!showAddReview)}
-                        className="text-xs text-[#1B3326] font-bold flex items-center gap-1 hover:underline self-start sm:self-auto"
-                      >
-                        <MessageSquarePlus className="w-3.5 h-3.5" />
-                        <span>{showAddReview ? 'Close Review Form' : 'Write a Review'}</span>
-                      </button>
-                    </div>
-
-                    {/* Expandable Review Form */}
-                    {showAddReview && (
-                      <form
-                        onSubmit={handleAddReviewSubmit}
-                        className="p-3.5 bg-[#F5F4F0] border border-[#DDD8CE] space-y-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-[#191817]">
-                            Rate "{product.title}"
-                          </span>
-                          {/* Star picker */}
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                type="button"
-                                onClick={() => setNewRating(star)}
-                                aria-label={`Rate ${star} out of 5 stars`}
-                                className="p-0.5 hover:scale-110 transition-transform"
-                              >
-                                <Star
-                                  className={`w-4 h-4 ${
-                                    star <= newRating
-                                      ? 'fill-[#C2A264] text-[#C2A264]'
-                                      : 'text-[#C7C3BD]'
-                                  }`}
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            required
-                            placeholder="Your Name (e.g. Kemi Adeyemi)"
-                            value={newName}
-                            onChange={(e) => setNewName(e.target.value)}
-                            className="text-sm px-3 py-2 bg-white border border-[#D5E3D8] focus:outline-none focus:border-[#1B3326]"
-                          />
-                          <input
-                            type="text"
-                            placeholder="City / State (e.g. Lekki, Lagos / Abuja)"
-                            value={newLocation}
-                            onChange={(e) => setNewLocation(e.target.value)}
-                            className="text-sm px-3 py-2 bg-white border border-[#D5E3D8] focus:outline-none focus:border-[#1B3326]"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            placeholder="Occasion (e.g. Husband Birthday / Friend Wedding)"
-                            value={newOccasion}
-                            onChange={(e) => setNewOccasion(e.target.value)}
-                            className="text-sm px-3 py-2 bg-white border border-[#D5E3D8] focus:outline-none focus:border-[#1B3326]"
-                          />
-                          <input
-                            type="text"
-                            required
-                            placeholder="Summary (e.g. He loved it so much!)"
-                            value={newTitle}
-                            onChange={(e) => setNewTitle(e.target.value)}
-                            className="text-sm px-3 py-2 bg-white border border-[#D5E3D8] focus:outline-none focus:border-[#1B3326]"
-                          />
-                        </div>
-
-                        <textarea
-                          rows={2}
-                          required
-                          placeholder="How did the person feel when they opened it? What did you think of the finish and wrapping?"
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          className="w-full text-sm px-3 py-2 bg-white border border-[#D5E3D8] focus:outline-none focus:border-[#1B3326]"
-                        />
-
-                        <button
-                          type="submit"
-                          disabled={reviewSubmitted}
-                          className="w-full py-2.5 bg-[#1B3326] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#122319] transition-colors flex items-center justify-center gap-1.5"
-                        >
-                          {reviewSubmitted ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-300" />
-                              <span>Thank you! Your review is posted.</span>
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="w-3.5 h-3.5 text-[#C2A264]" />
-                              <span>Submit Your Review</span>
-                            </>
-                          )}
-                        </button>
-                      </form>
-                    )}
-
-                    {/* Testimonials List */}
-                    <div className="space-y-3">
-                      {filteredReviews.length === 0 ? (
-                        <div className="p-6 bg-[#FAF9F5] border border-[#DDD8CE] text-center space-y-2">
-                          <p className="text-sm font-semibold text-[#191817]">
-                            No {starFilter}-star reviews for this selection yet.
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => setStarFilter('all')}
-                            className="text-xs font-bold text-[#1B3326] underline"
-                          >
-                            Show all reviews ({reviewsList.length})
-                          </button>
-                        </div>
-                      ) : (
-                        filteredReviews.map((review) => (
-                          <div
-                            key={review.id}
-                            className="p-3.5 bg-white border border-[#DDD8CE] hover:border-[#1B3326]/40 transition-colors space-y-2 shadow-[0_1px_3px_rgba(0,0,0,0.03)]"
-                          >
-                            {/* Reviewer Header */}
-                            <div className="flex items-start justify-between gap-2 flex-wrap">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-sm font-bold text-[#191817]">
-                                    {review.author}
-                                  </span>
-                                  {review.verifiedBuyer && (
-                                    <span className="inline-flex items-center gap-0.5 text-xs text-emerald-800 bg-[#E8F3EB] px-2 py-0.5 font-medium">
-                                      <Check className="w-3 h-3" />
-                                      <span>Verified Buyer</span>
-                                    </span>
-                                  )}
-                                  {review.productId === product.id && (
-                                    <span className="text-xs font-semibold text-[#1B3326] bg-[#FAF7F2] border border-[#DDD8CE] px-2 py-0.5">
-                                      This Gift Set
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-[#4A4640] mt-0.5 flex-wrap">
-                                  <span className="flex items-center gap-0.5">
-                                    <MapPin className="w-3 h-3 text-[#1B3326]" />
-                                    <span>{review.location}</span>
-                                  </span>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-0.5 text-[#1B3326] font-medium">
-                                    <Calendar className="w-3 h-3" />
-                                    <span>{review.occasion}</span>
-                                  </span>
-                                </div>
-                                {review.giftSetName && (
-                                  <p className="text-xs text-[#4A4640] mt-1">
-                                    Gift Set Reviewed:{' '}
-                                    <strong className="text-[#191817]">{review.giftSetName}</strong>
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Stars & Date */}
-                              <div className="text-right">
-                                <div className="flex items-center text-[#C2A264] justify-end">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star
-                                      key={i}
-                                      className={`w-3.5 h-3.5 ${
-                                        i < Math.round(review.rating)
-                                          ? 'fill-[#C2A264] text-[#C2A264]'
-                                          : 'text-[#E0DDD7]'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                                <span className="text-xs text-[#4A4640]">
-                                  {review.date}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Testimonial Title */}
-                            <h5 className="text-sm font-bold text-[#191817]">
-                              "{review.title}"
-                            </h5>
-
-                            {/* Review Comment */}
-                            <p className="text-xs sm:text-sm text-[#38342F] leading-relaxed">
-                              {review.comment}
-                            </p>
-
-                            {/* Helpful Button */}
-                            <div className="pt-2 flex items-center justify-between border-t border-[#F2F0EC] text-xs text-[#4A4640]">
-                              <span>
-                                Did this review help you decide?
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleHelpfulClick(review.id)}
-                                disabled={userVoted[review.id]}
-                                className={`flex items-center gap-1 px-2.5 py-1 text-xs border transition-colors ${
-                                  userVoted[review.id]
-                                    ? 'bg-[#EBF2ED] text-[#1B3326] border-[#D5E3D8]'
-                                    : 'bg-white hover:bg-[#FAFAF8] text-[#38342F] border-[#DDD8CE]'
-                                }`}
-                              >
-                                <ThumbsUp className="w-3 h-3" />
-                                <span>
-                                  Helpful ({helpfulMap[review.id] || review.helpfulCount})
-                                </span>
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
+                  <ProductReviews
+                    productId={product.id}
+                    productTitle={product.title}
+                    reviews={reviewsList}
+                    stats={stats}
+                    onAddReview={handleAddReview}
+                  />
                 )}
               </div>
 

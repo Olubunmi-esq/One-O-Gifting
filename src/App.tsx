@@ -6,7 +6,7 @@ import { ProductModal } from './components/ProductModal'
 import { QuoteInquiryModal, QuoteInquiryTarget } from './components/QuoteInquiryModal'
 import { WhatsAppFloatingButton } from './components/WhatsAppFloatingButton'
 import { HomeView } from './views/HomeView'
-import { CatalogueView } from './views/CatalogueView'
+import { CatalogueView, CatalogueFilterPreset } from './views/CatalogueView'
 import { OccasionsView } from './views/OccasionsView'
 import { BuilderView } from './views/BuilderView'
 import { CorporateView } from './views/CorporateView'
@@ -21,6 +21,7 @@ import { WishlistProvider } from './context/WishlistContext'
 
 const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>('home')
+  const [cataloguePreset, setCataloguePreset] = useState<CatalogueFilterPreset | null>(null)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('one_o_cart')
@@ -40,6 +41,19 @@ const AppContent: React.FC = () => {
       console.warn('LocalStorage save failed:', err)
     }
   }, [cartItems])
+
+  const handleNavigate = (view: string) => {
+    if (view !== 'catalogue') {
+      setCataloguePreset(null)
+    }
+    setCurrentView(view)
+  }
+
+  const handleOpenCatalogueWithFilter = (preset: CatalogueFilterPreset) => {
+    setCataloguePreset({ ...preset, _ts: Date.now() })
+    setCurrentView('catalogue')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const handleAddToCart = (item: CartItem) => {
     setCartItems(prev => [...prev, item])
@@ -72,19 +86,22 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-[#191817]">
       <Header
         currentView={currentView}
-        setCurrentView={setCurrentView}
+        setCurrentView={handleNavigate}
         cartCount={cartItems.length}
         onOpenCart={() => setIsCartOpen(true)}
+        onSelectProduct={handleSelectProduct}
+        onSearchCatalogue={handleOpenCatalogueWithFilter}
       />
 
       <main className="flex-1">
         {currentView === 'home' && (
           <HomeView
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigate}
             onSelectProduct={handleSelectProduct}
             onAddToCart={handleAddToCart}
             onOpenCart={() => setIsCartOpen(true)}
             onRequestQuote={handleRequestQuote}
+            onOpenCatalogueWithFilter={handleOpenCatalogueWithFilter}
           />
         )}
         {currentView === 'guide' && (
@@ -92,28 +109,29 @@ const AppContent: React.FC = () => {
             onSelectProduct={handleSelectProduct}
             onAddToCart={handleAddToCart}
             onOpenCart={() => setIsCartOpen(true)}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigate}
             onRequestQuote={handleRequestQuote}
           />
         )}
         {currentView === 'catalogue' && (
           <CatalogueView
             onSelectProduct={handleSelectProduct}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigate}
             onRequestQuote={handleRequestQuote}
+            initialFilter={cataloguePreset}
           />
         )}
         {currentView === 'wishlist' && (
           <WishlistView
             onSelectProduct={handleSelectProduct}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigate}
             onRequestQuote={handleRequestQuote}
           />
         )}
         {currentView === 'occasions' && (
           <OccasionsView
             onSelectProduct={handleSelectProduct}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigate}
             onRequestQuote={handleRequestQuote}
           />
         )}
@@ -126,19 +144,18 @@ const AppContent: React.FC = () => {
         {currentView === 'corporate' && (
           <CorporateView onRequestQuote={handleRequestQuote} />
         )}
-        {currentView === 'story' && <StoryView setCurrentView={setCurrentView} />}
+        {currentView === 'story' && <StoryView setCurrentView={handleNavigate} />}
         {currentView === 'contact' && <ContactView />}
         {currentView === 'privacy' && (
-          <LegalView initialTab="privacy" setCurrentView={setCurrentView} />
+          <LegalView initialTab="privacy" setCurrentView={handleNavigate} />
         )}
         {currentView === 'terms' && (
-          <LegalView initialTab="terms" setCurrentView={setCurrentView} />
+          <LegalView initialTab="terms" setCurrentView={handleNavigate} />
         )}
       </main>
 
-      <Footer setCurrentView={setCurrentView} />
+      <Footer setCurrentView={handleNavigate} />
 
-      {/* Product Detail & Personalisation Modal */}
       <ProductModal
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
@@ -146,7 +163,6 @@ const AppContent: React.FC = () => {
         onRequestQuote={handleRequestQuote}
       />
 
-      {/* Custom Order Quote Inquiry Modal */}
       <QuoteInquiryModal
         target={quoteTarget}
         onClose={() => setQuoteTarget(null)}
@@ -154,7 +170,6 @@ const AppContent: React.FC = () => {
         onOpenCart={() => setIsCartOpen(true)}
       />
 
-      {/* Cart & Inquiry Drawer */}
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -164,7 +179,6 @@ const AppContent: React.FC = () => {
         onUpdateItemGiftNote={handleUpdateItemGiftNote}
       />
 
-      {/* Floating WhatsApp Direct Inquiry Action Button */}
       <WhatsAppFloatingButton
         currentView={currentView}
         hidden={isCartOpen || Boolean(selectedProduct) || Boolean(quoteTarget)}
